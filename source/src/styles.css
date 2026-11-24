@@ -244,3 +244,12 @@ body { word-break: keep-all; overflow-wrap: anywhere; }
 .pickchip button { min-width: 32px; min-height: 32px; border: 0; border-radius: 50%; background: rgba(255,255,255,.7); color: var(--orange-d); }
 
 .goaltag { display: inline-block; margin: 4px 0 2px; padding: 3px 10px; border-radius: 999px; background: var(--orange-l); color: var(--orange-d); font-size: .9rem; }
+
+.steps { list-style: none; counter-reset: st; padding: 0; margin: 0 0 10px; }
+.steps li { counter-increment: st; position: relative; padding: 2px 0 12px 38px; line-height: 1.55; }
+.steps li::before { content: counter(st); position: absolute; left: 0; top: 2px; width: 26px; height: 26px; border-radius: 50%; background: var(--orange); color: #241f12; font-weight: 700; font-size: .9rem; display: flex; align-items: center; justify-content: center; }
+.steps li b { display: block; font-size: 1.05rem; }
+.steps li span { display: block; }
+.steps li .eg { margin-top: 4px; padding: 6px 10px; border-radius: 10px; background: rgba(255, 240, 179, .7); color: var(--orange-d); font-size: .95rem; }
+ul.plain.sharenotes { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .04); line-height: 1.7; font-size: .95rem; }
+ul.plain.sharenotes li { list-style: none; margin: 0; }

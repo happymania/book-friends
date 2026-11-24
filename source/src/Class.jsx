@@ -225,7 +225,6 @@ function Board({ cid, fid, family, books, shares, say, chatUrl }) {
           <summary>❓ 책 나눔은 이렇게 해요</summary>
           <div className="help-body"><ShareSteps /></div>
         </details>
-        <p className="muted">신청과 답장은 앱 안의 짧은 메모로 주고받고, 책은 학교에서 어린이끼리 주고 받아요.<br />책 나눔 글과 메모에는<br /><b>전화번호나 주소를 적지 마세요.</b><br />판매·거래는 없고 나눔과 빌려주기만 해요.</p>
       </div>
       {adding && <ShareForm cid={cid} fid={fid} family={family} books={books} say={say} onDone={() => setAdding(false)} />}
       {list.length === 0 && <div className="glass card empty">아직 글이 없어요.</div>}
