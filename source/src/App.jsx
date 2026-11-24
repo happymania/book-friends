@@ -3,7 +3,7 @@ import { onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut } from
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db, googleProvider } from './firebase';
 import { createFamily, joinFamily, connectKidDevice } from './db';
-import { KID_EMOJIS } from './util';
+import { KID_EMOJIS, contactHref, CONTACT_EMAIL } from './util';
 import Main from './Main.jsx';
 
 function Loading({ text = '불러오는 중...' }) {
@@ -67,6 +67,7 @@ function Landing({ anonymousUser }) {
         <button className="btn primary block" style={{ marginTop: 14 }} onClick={() => googleLogin(setErr)}>👨‍👩‍👧 부모님 · Google로 시작</button>
         <button className="btn block" style={{ marginTop: 10 }} onClick={() => setMode('kid')}>🧒 아이 기기 연결 (코드 입력)</button>
         {anonymousUser && <p className="muted" style={{ marginTop: 14 }}>연결이 해제된 기기예요. 코드를 다시 입력해 주세요.</p>}
+        <p className="contact">문의: <a href={contactHref}>{CONTACT_EMAIL}</a></p>
       </div>
     </div>
   );
@@ -135,6 +136,7 @@ function Onboarding({ user }) {
           </>
         )}
         <button className="btn block" style={{ marginTop: 14 }} onClick={() => signOut(auth)}>로그아웃</button>
+        <p className="contact">문의: <a href={contactHref}>{CONTACT_EMAIL}</a></p>
       </div>
     </div>
   );

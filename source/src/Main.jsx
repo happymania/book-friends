@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
-import { hasPin, verifyPin, setLib, setRead, disconnectKidDevice, ensureClassMember, syncStats, deleteStats } from './db';
+import { hasPin, verifyPin, setLib, setRead, disconnectKidDevice, ensureClassMember, syncStats, deleteStats, resetMyProfile } from './db';
 import { computePace, computeBadges, earnedIds, statPayload, titleKey } from './logic';
-import { today } from './util';
+import { today, nextFontSize, getFontSize, FS_LABEL } from './util';
 import BookList from './BookList.jsx';
 import Stats from './Stats.jsx';
 import Settings from './Settings.jsx';
@@ -29,6 +29,8 @@ export default function Main({ user, profile, kidMode }) {
   const [pinAsk, setPinAsk] = useState(false);
   const [loadErr, setLoadErr] = useState('');
   const [recKid, setRecKid] = useState('');
+  const [gone, setGone] = useState(false);
+  const [fs, setFs] = useState(getFontSize());
   const [classReady, setClassReady] = useState(false);
   const [shares, setShares] = useState([]);
   const toastTimer = useRef();
@@ -38,9 +40,13 @@ export default function Main({ user, profile, kidMode }) {
 
   // 실시간 구독
   useEffect(() => {
-    const onErr = (e) => setLoadErr('데이터를 불러오지 못했어요: ' + (e.code || e.message));
+    const onErr = (e) => { if (!globalThis.__bfDeleting) setLoadErr('데이터를 불러오지 못했어요: ' + (e.code || e.message)); };
+    const onFamErr = (e) => {
+      if (globalThis.__bfDeleting) return;
+      if (e.code === 'permission-denied') setGone(true); else onErr(e);
+    };
     const offs = [
-      onSnapshot(doc(db, 'families', fid), (s) => setFamily(s.exists() ? { id: s.id, ...s.data() } : null), onErr),
+      onSnapshot(doc(db, 'families', fid), (s) => { if (!s.exists() && !globalThis.__bfDeleting) setGone(true); setFamily(s.exists() ? { id: s.id, ...s.data() } : null); }, onFamErr),
       onSnapshot(collection(db, 'families', fid, 'books'), (s) => {
         setBooks(s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
       }, onErr),
@@ -72,7 +78,7 @@ export default function Main({ user, profile, kidMode }) {
       s.docs.forEach((d) => { m[d.id] = d.data(); });
       setRecords(m);
       setRecKid(activeKid);
-    }, (e) => setLoadErr('기록을 불러오지 못했어요: ' + (e.code || e.message)));
+    }, (e) => { if (!globalThis.__bfDeleting) setLoadErr('기록을 불러오지 못했어요: ' + (e.code || e.message)); });
   }, [fid, activeKid]);
 
   const cid = family?.classId || '';
@@ -155,6 +161,19 @@ export default function Main({ user, profile, kidMode }) {
   const tabs = isParent ? ['books', 'stats', 'class', 'settings'] : ['books', 'stats'];
   const tabLabel = { books: '📚 책', stats: '📊 통계', class: '🏫 학급', settings: '⚙️ 설정' };
 
+  if (gone) {
+    return (
+      <div className="wrap"><div className="glass card">
+        <h2>{kidMode ? '연결이 해제되었어요' : '이 가족에 더 이상 접근할 수 없어요'}</h2>
+        <p>{kidMode ? '부모님이 가족 정보를 지웠거나 기기 연결을 해제했어요.' : '가족이 삭제되었거나 보호자에서 제외되었을 수 있어요.'}</p>
+        <button className="btn primary block" onClick={async () => {
+          await resetMyProfile(auth.currentUser.uid);
+          if (kidMode) await signOut(auth); else location.reload();
+        }}>{kidMode ? '확인' : '처음 화면으로'}</button>
+      </div></div>
+    );
+  }
+
   if (loadErr) {
     return <div className="wrap"><div className="glass card"><h2>앗, 문제가 생겼어요</h2><p className="err">{loadErr}</p>
       <p className="muted">보안 규칙이 배포되지 않았거나 접근 권한이 없을 수 있어요.</p>
@@ -170,6 +189,7 @@ export default function Main({ user, profile, kidMode }) {
             <div className="title">📚 {family?.name || '책은 내 친구'}</div>
             <div className="muted">{family?.school} {family?.className}</div>
           </div>
+          <button className="fsbtn" onClick={() => setFs(nextFontSize())} aria-label="글자 크기 바꾸기">가 {FS_LABEL[fs]}</button>
           <span className="modebadge">{kidMode ? '아이 기기' : isParent ? '부모 모드' : '아이 모드'}</span>
         </div>
         {!kidMode && (

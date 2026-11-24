@@ -73,3 +73,13 @@ export function downloadCsv(filename, rows) {
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
+
+export const CONTACT_EMAIL = 'yclee729@gmail.com';
+export const contactHref = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('[책은 내 친구] 문의')}`;
+
+// 글자 크기: normal | lg | xl
+const FS = ['normal', 'lg', 'xl'];
+export function getFontSize() { try { const v = localStorage.getItem('bf_fs'); return FS.includes(v) ? v : 'normal'; } catch { return 'normal'; } }
+export function applyFontSize(v) { document.documentElement.dataset.fs = v; try { localStorage.setItem('bf_fs', v); } catch { /* 무시 */ } }
+export function nextFontSize() { const n = FS[(FS.indexOf(getFontSize()) + 1) % FS.length]; applyFontSize(n); return n; }
+export const FS_LABEL = { normal: '보통', lg: '크게', xl: '아주 크게' };

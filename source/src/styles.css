@@ -6,11 +6,14 @@
   --green: #2e9e5b; --blue: #3b7dd8; --purple: #8a5cd6; --red: #d64545;
   --r: 20px;
 }
+html { font-size: 18px; }
+html[data-fs='lg'] { font-size: 20px; }
+html[data-fs='xl'] { font-size: 22px; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; overflow-x: hidden; }
 body {
   font-family: 'Gowun Dodum', sans-serif; color: var(--ink);
-  font-size: clamp(18px, 4.6vw, 22px); line-height: 1.5; letter-spacing: .01em;
+  font-size: 1.15rem; line-height: 1.55; letter-spacing: .01em;
   min-height: 100vh; background: linear-gradient(135deg, #fff1de 0%, #ffd9c0 45%, #ffe8f0 100%);
   background-attachment: fixed;
 }
@@ -177,3 +180,8 @@ ul.plain { margin: 8px 0 0; padding-left: 1.2em; line-height: 1.7; }
 .help-body li { margin-bottom: 4px; }
 
 .meetnote { margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: var(--orange-l); color: var(--ink); font-size: 1rem; }
+
+.fsbtn { min-height: 44px; min-width: 44px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--glass-solid); font-size: .9rem; }
+.contact { text-align: center; margin: 14px 0 0; font-size: .85rem; color: var(--ink-s); }
+.contact a { color: var(--orange-d); }
+.danger-zone { border: 1.5px solid rgba(214,69,69,.35); border-radius: 14px; padding: 12px; background: rgba(255,255,255,.5); }

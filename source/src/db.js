@@ -2,8 +2,8 @@ import {
   doc, collection, getDoc, setDoc, updateDoc, deleteDoc, getDocs, query, where,
   writeBatch, serverTimestamp, deleteField,
 } from 'firebase/firestore';
-import { signInAnonymously } from 'firebase/auth';
-import { auth, db, firebaseConfig } from './firebase';
+import { signInAnonymously, reauthenticateWithPopup, deleteUser } from 'firebase/auth';
+import { auth, db, firebaseConfig, googleProvider } from './firebase';
 import { genCode, hashPin, today } from './util';
 import { LIRA_G4 } from './template';
 
@@ -297,4 +297,61 @@ export function updateRequestNote(cid, sid, fid, note) {
 }
 export function cancelRequest(cid, sid, fid) {
   return deleteDoc(cdoc(cid, 'shares', sid, 'requests', fid));
+}
+
+/* ---------- 탈퇴 (계정·데이터 삭제) ---------- */
+async function wipeCollection(ref) {
+  const s = await getDocs(ref);
+  await commitChunks(s.docs.map((d) => (b) => b.delete(d.ref)));
+}
+
+// 본인 확인: 구글 팝업 재인증. 사용자가 창을 닫으면 중단, 팝업을 쓸 수 없는 환경이면 건너뜀
+export async function confirmIdentity(user) {
+  try { await reauthenticateWithPopup(user, googleProvider); return true; }
+  catch (e) {
+    if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') throw new Error('본인 확인이 취소되었어요.');
+    if (e.code === 'auth/user-mismatch') throw new Error('로그인한 계정과 다른 구글 계정이에요.');
+    return false;
+  }
+}
+
+// 가족을 만든 사람(소유자): 가족 데이터 전체 삭제. 다른 보호자와 아이 기기 연결도 끊김. 복구 불가.
+export async function deleteFamilyData(user, fid, family, kids) {
+  globalThis.__bfDeleting = true;
+  const cid = family?.classId;
+  if (cid) await leaveClass(user, fid, cid, kids).catch(() => {});
+  for (const k of kids) {
+    await wipeCollection(fcol(fid, 'kids', k.id, 'records'));
+    if (k.connectCode) await deleteDoc(doc(db, 'connectCodes', k.connectCode)).catch(() => {});
+    await deleteDoc(fdoc(fid, 'kids', k.id));
+  }
+  await wipeCollection(fcol(fid, 'books'));
+  await wipeCollection(fcol(fid, 'devices'));
+  const ps = await getDoc(fdoc(fid, 'private', 'settings'));
+  const inv = ps.exists() ? ps.data().inviteCode : '';
+  if (inv) await deleteDoc(doc(db, 'invites', inv)).catch(() => {});
+  await wipeCollection(fcol(fid, 'private'));
+  const ms = await getDocs(fcol(fid, 'members'));
+  for (const m of ms.docs) if (m.id !== user.uid) await deleteDoc(m.ref);
+  await deleteDoc(fdoc(fid, 'members', user.uid));
+  await deleteDoc(fdoc(fid));
+  await deleteDoc(doc(db, 'users', user.uid)).catch(() => {});
+}
+
+// 가족을 만든 사람이 아닌 보호자: 이 가족에서만 나가기 (가족 데이터는 유지)
+export async function leaveFamilyData(user, fid, family) {
+  globalThis.__bfDeleting = true;
+  if (family?.classId) await deleteDoc(doc(db, 'classes', family.classId, 'members', user.uid)).catch(() => {});
+  await deleteDoc(fdoc(fid, 'members', user.uid));
+  await deleteDoc(doc(db, 'users', user.uid)).catch(() => {});
+}
+
+// 구글 로그인 계정 자체 삭제(Firebase Auth). 실패하면 false
+export async function deleteAuthAccount(user) {
+  try { await deleteUser(user); return true; } catch (e) { return false; }
+}
+
+// 가족 접근 권한이 사라진 계정/기기 정리: 내 연결 정보(users 문서)만 지움
+export async function resetMyProfile(uid) {
+  await deleteDoc(doc(db, 'users', uid)).catch(() => {});
 }

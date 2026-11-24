@@ -5,8 +5,9 @@ import { auth, db } from './firebase';
 import {
   addKid, regenConnectCode, renameKid, removeKid, regenInviteCode, setPin, addBook, deleteBook,
   importBooks, resetToTemplate, importLegacy, updateFamilyInfo,
+  confirmIdentity, deleteFamilyData, leaveFamilyData, deleteAuthAccount,
 } from './db';
-import { CATS, KID_EMOJIS, parseCsv, downloadCsv } from './util';
+import { CATS, KID_EMOJIS, parseCsv, downloadCsv, contactHref, CONTACT_EMAIL } from './util';
 import { HelpGuide } from './Help.jsx';
 
 function Section({ title, children, open: o = false }) {
@@ -38,6 +39,32 @@ export default function Settings({ fid, family, pace, kids, books, activeKid, us
   /* 가족 */
   const [fi, setFi] = useState({ name: family?.name || '', school: family?.school || '', className: family?.className || '' });
   const [legacyMsg, setLegacyMsg] = useState('');
+  /* 탈퇴 */
+  const [delText, setDelText] = useState('');
+  const [delBusy, setDelBusy] = useState(false);
+  const isOwner = family?.ownerUid === user.uid;
+
+  async function doDelete() {
+    if (delText.trim() !== '삭제') return say('입력 칸에 「삭제」를 정확히 입력해 주세요');
+    if (!confirm(isOwner
+      ? '정말 탈퇴할까요?\n가족 데이터(아이 프로필·읽기 기록·도서 목록)와 계정이 모두 삭제되고 복구할 수 없어요.'
+      : '이 가족에서 나가고 계정을 삭제할까요?')) return;
+    setDelBusy(true);
+    try {
+      await confirmIdentity(auth.currentUser);
+      if (isOwner) await deleteFamilyData(user, fid, family, kids);
+      else await leaveFamilyData(user, fid, family);
+      const ok = await deleteAuthAccount(auth.currentUser);
+      if (!ok) {
+        await signOut(auth);
+        alert('데이터는 삭제했어요. 로그인 기록(계정 연결)은 남아 있을 수 있어요. 지우려면 ' + CONTACT_EMAIL + ' 로 요청해 주세요.');
+      }
+    } catch (e) {
+      globalThis.__bfDeleting = false;
+      say('실패: ' + (e.message || e.code));
+      setDelBusy(false);
+    }
+  }
   /* 읽기 목표 */
   const [goal, setGoal] = useState({ deadline: family?.deadline || '', goalTarget: family?.goalTarget || 'all' });
 
@@ -173,9 +200,40 @@ export default function Settings({ fid, family, pace, kids, books, activeKid, us
         {legacyMsg && <div className="ok">{legacyMsg}</div>}
       </Section>
 
+      <Section title="🗑 탈퇴 (계정·데이터 삭제)">
+        <div className="danger-zone">
+          {isOwner ? (
+            <>
+              <p><b>가족 데이터 전체가 삭제돼요.</b></p>
+              <ul className="plain">
+                <li>아이 프로필, 읽기 기록, 도서 목록, 연결 코드, PIN이 모두 지워져요.</li>
+                <li>배우자 등 다른 보호자와 아이 폰은 더 이상 이 가족에 접근할 수 없어요.</li>
+                <li>학급에 참여 중이면 우리 집 집계 숫자와 나눔 글도 지워져요.</li>
+                <li>구글 로그인 계정 연결도 삭제돼요. 복구할 수 없어요.</li>
+              </ul>
+            </>
+          ) : (
+            <>
+              <p><b>이 가족에서 나가고 계정을 삭제해요.</b></p>
+              <ul className="plain">
+                <li>가족 데이터(읽기 기록 등)는 남아 있고 다른 보호자는 계속 쓸 수 있어요.</li>
+                <li>구글 로그인 계정 연결이 삭제돼요.</li>
+              </ul>
+            </>
+          )}
+          <p className="muted">삭제 전에 통계 탭의 「CSV로 내보내기」로 기록을 저장해 두세요. 본인 확인을 위해 구글 로그인 창이 한 번 더 열려요.</p>
+          <label className="f">확인을 위해 「삭제」를 입력하세요</label>
+          <input className="input" value={delText} onChange={(e) => setDelText(e.target.value)} placeholder="삭제" />
+          <button className="btn block danger" style={{ marginTop: 10 }} disabled={delBusy || delText.trim() !== '삭제'} onClick={doDelete}>{delBusy ? '삭제 중...' : (isOwner ? '가족 데이터 삭제하고 탈퇴' : '이 가족에서 나가고 탈퇴')}</button>
+        </div>
+        <p className="muted">버튼이 어려우면 {CONTACT_EMAIL} 로 삭제를 요청해도 돼요.</p>
+      </Section>
+
       <div className="glass card">
         <p className="muted">로그인: {user.email}</p>
         <button className="btn block" onClick={() => signOut(auth)}>로그아웃</button>
+        <a className="btn block" style={{ marginTop: 8, textDecoration: 'none', textAlign: 'center' }} href={contactHref}>✉️ 개발자에게 문의하기</a>
+        <p className="muted" style={{ textAlign: 'center' }}>{CONTACT_EMAIL}</p>
       </div>
       <div className="pad-bottom" />
     </>
