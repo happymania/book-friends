@@ -230,7 +230,7 @@ body { word-break: keep-all; overflow-wrap: anywhere; }
 .refreshbtn:active svg { transform: rotate(180deg); transition: transform .3s; }
 
 .stars { display: inline-flex; gap: 2px; }
-.stars .star { font-size: 1.7rem; line-height: 1; color: #d9d2bd; background: none; border: 0; min-width: 44px; min-height: 44px; padding: 0; }
+.stars .star { font-size: 1.6rem; line-height: 1; color: #d9d2bd; background: none; border: 0; min-width: 38px; min-height: 44px; padding: 0; }
 .stars .star.on { color: var(--gold-d); }
 .stars .star.ro { font-style: normal; font-size: 1.15rem; min-width: 0; min-height: 0; }
 .reviewbox { margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(0,0,0,.12); }
