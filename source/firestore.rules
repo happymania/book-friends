@@ -160,6 +160,12 @@ service cloud.firestore {
         && (request.resource.data.get('classId', '') == resource.data.get('classId', '')
             || request.resource.data.get('classId', '') == ''
             || isClassMember(request.resource.data.classId));
+      // 아이 기기는 읽기 목표(마감일·범위)만 수정 가능
+      allow update: if isDevice(fid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deadline', 'goalTarget'])
+        && request.resource.data.get('goalTarget', 'all') in ['all', 'selected']
+        && request.resource.data.get('deadline', '') is string
+        && request.resource.data.get('deadline', '').size() <= 10;
       allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
 
       match /members/{uid} {

@@ -50,13 +50,34 @@ const PACE_MSG = {
   none: ['📚', '목표로 삼을 책이 없어요.'],
 };
 
-function PaceCard({ pace, goToSettings }) {
+function GoalForm({ family, onGoal, onClose }) {
+  const [deadline, setDeadline] = useState(family?.deadline || '');
+  const [target, setTarget] = useState(family?.goalTarget || 'all');
+  return (
+    <div className="goalform">
+      <label className="f">목표 범위</label>
+      <select className="input" value={target} onChange={(e) => setTarget(e.target.value)}>
+        <option value="all">전체 도서</option><option value="selected">선정도서만</option>
+      </select>
+      <label className="f">마감일</label>
+      <input className="input" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+      <div className="row" style={{ marginTop: 10 }}>
+        <button className="btn primary grow" disabled={!deadline} onClick={() => { onGoal({ deadline, goalTarget: target }); onClose(); }}>저장</button>
+        {family?.deadline && <button className="btn grow danger" onClick={() => { onGoal({ deadline: '', goalTarget: target }); onClose(); }}>해제</button>}
+        <button className="btn grow" onClick={onClose}>닫기</button>
+      </div>
+    </div>
+  );
+}
+
+function PaceCard({ pace, family, onGoal }) {
+  const [edit, setEdit] = useState(false);
   if (!pace.hasGoal) {
-    if (!goToSettings) return null;
     return (
       <div className="glass card pace">
         <div className="row"><div className="grow"><b>🎯 읽기 목표</b><div className="muted">마감일을 정하면 일주일에 몇 권씩 읽어야 하는지 알려 드려요.</div></div>
-          <button className="btn sm" onClick={goToSettings}>정하기</button></div>
+          {!edit && <button className="btn sm" onClick={() => setEdit(true)}>정하기</button>}</div>
+        {edit && <GoalForm family={family} onGoal={onGoal} onClose={() => setEdit(false)} />}
       </div>
     );
   }
@@ -70,11 +91,13 @@ function PaceCard({ pace, goToSettings }) {
       {pace.level !== 'complete' && pace.level !== 'over' && pace.level !== 'none' && (
         <div className="muted">마감까지 {pace.days}일 · 남은 책 {pace.remaining}권 → <b>일주일에 {pace.perWeek}권</b> (이번 주 {pace.thisWeek}권 완독)</div>
       )}
+      {!edit && <button className="btn sm" style={{ marginTop: 8 }} onClick={() => setEdit(true)}>목표 고치기</button>}
+      {edit && <GoalForm family={family} onGoal={onGoal} onClose={() => setEdit(false)} />}
     </div>
   );
 }
 
-export default function BookList({ books, records, isParent, onLib, onRead, onReview, pace, shareHints = {}, goToSettings, goToClass }) {
+export default function BookList({ books, records, isParent, onLib, onRead, onReview, onGoal, family, pace, shareHints = {}, goToClass }) {
   const [type, setType] = useState('전체');
   const [status, setStatus] = useState('전체');
   const [q, setQ] = useState('');
@@ -98,7 +121,7 @@ export default function BookList({ books, records, isParent, onLib, onRead, onRe
 
   return (
     <>
-      {pace && <PaceCard pace={pace} goToSettings={goToSettings} />}
+      {pace && <PaceCard pace={pace} family={family} onGoal={onGoal} />}
       <div className="sum">
         <div className="glass box"><div className="n">{sum.total - sum.reading - sum.done}</div><div className="l">안 읽음</div></div>
         <div className="glass box"><div className="n" style={{ color: 'var(--blue)' }}>{sum.reading}</div><div className="l">읽는 중</div></div>

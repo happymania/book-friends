@@ -171,6 +171,11 @@ export async function resetToTemplate(fid, existingBooks) {
   await commitChunks(existingBooks.map((bk) => (b) => b.delete(fdoc(fid, 'books', bk.id))));
   await commitChunks(LIRA_G4.map((bk, i) => (b) => b.set(fdoc(fid, 'books', bk.id), { ...bk, order: i, lib: 'none' })));
 }
+// 읽기 목표(마감일·범위): 부모와 어린이 기기 모두 설정 가능
+export async function setGoal(fid, { deadline, goalTarget }) {
+  await updateDoc(fdoc(fid), { deadline: deadline || '', goalTarget: goalTarget === 'selected' ? 'selected' : 'all' });
+}
+
 export async function updateFamilyInfo(fid, data) {
   await updateDoc(fdoc(fid), data);
 }

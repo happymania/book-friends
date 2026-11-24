@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
-import { hasPin, verifyPin, setLib, setRead, setReview, disconnectKidDevice, ensureClassMember, syncStats, deleteStats, resetMyProfile } from './db';
+import { hasPin, verifyPin, setLib, setRead, setReview, setGoal, disconnectKidDevice, ensureClassMember, syncStats, deleteStats, resetMyProfile } from './db';
 import { computePace, computeBadges, earnedIds, statPayload, titleKey } from './logic';
 import { today, applyFontSize, getFontSize, FS_LABEL } from './util';
 import BookList from './BookList.jsx';
@@ -160,6 +160,7 @@ export default function Main({ user, profile, kidMode }) {
     else say(next === 'reading' ? '📖 지금 읽는 중!' : '상태 초기화');
   };
 
+  const onGoal = (g) => setGoal(fid, g).then(() => say('목표를 저장했어요')).catch((e) => say('저장 실패: ' + (e.code || e.message)));
   const onReview = (b, patch) => setReview(fid, activeKid, b.id, patch).catch((e) => say('저장 실패: ' + (e.code || e.message)));
 
   const tabs = isParent ? ['books', 'stats', 'class', 'settings'] : ['books', 'stats'];
@@ -236,7 +237,7 @@ export default function Main({ user, profile, kidMode }) {
       ) : tab === 'books' ? (
         <>
         {isParent && <NoticeBar />}
-        <BookList books={books} records={records} isParent={isParent} onLib={onLib} onRead={onRead} onReview={onReview} pace={pace} shareHints={shareHints} goToSettings={isParent ? () => { setFocus('goal'); setTab('settings'); } : null} goToClass={isParent ? () => setTab('class') : null} />
+        <BookList books={books} records={records} isParent={isParent} onLib={onLib} onRead={onRead} onReview={onReview} onGoal={onGoal} pace={pace} family={family} shareHints={shareHints} goToSettings={isParent ? () => { setFocus('goal'); setTab('settings'); } : null} goToClass={isParent ? () => setTab('class') : null} />
         </>
       ) : tab === 'stats' ? (
         <Stats books={books} records={records} kid={kid} isParent={isParent} family={family} />
