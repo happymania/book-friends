@@ -175,3 +175,5 @@ ul.plain { margin: 8px 0 0; padding-left: 1.2em; line-height: 1.7; }
 .help-body { padding: 0 14px 12px; line-height: 1.65; }
 .help-body ol, .help-body ul { margin: 4px 0 6px; padding-left: 1.3em; }
 .help-body li { margin-bottom: 4px; }
+
+.meetnote { margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: var(--orange-l); color: var(--ink); font-size: 1rem; }

@@ -210,6 +210,7 @@ function Board({ cid, fid, family, books, shares, say, chatUrl }) {
         {chatUrl && /^https:\/\//.test(chatUrl) && (
           <a className="btn block chatlink" href={chatUrl} target="_blank" rel="noopener noreferrer">💬 학급 단톡방 열기 (연락은 여기서)</a>
         )}
+        <div className="meetnote">📌 책은 <b>학교에서 만나서 주고 받아요.</b></div>
         <details className="help-item" open={shares.length === 0}>
           <summary>❓ 책 나눔은 이렇게 해요</summary>
           <div className="help-body"><ShareSteps /></div>
@@ -243,6 +244,7 @@ function ShareForm({ cid, fid, family, books, say, onDone }) {
       <label className="f">책 제목</label>
       <input className="input" list="bf-books" maxLength={80} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="목록에서 고르거나 직접 입력" />
       <datalist id="bf-books">{books.map((b) => <option key={b.id} value={b.title} />)}</datalist>
+      <div className="meetnote">📌 책은 학교에서 만나서 주고 받아요. 만날 시간·장소는 신청 메모와 답장으로 정해요.</div>
       <label className="f">한마디 (선택, 100자)</label>
       <input className="input" maxLength={100} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="예: 깨끗해요. 다음 주까지 가능" />
       <label className="f">표시 이름 (30자)</label>
@@ -265,7 +267,7 @@ function ReqRow({ r, cid, sid, say }) {
       {r.reply && <div className="muted">내 답장: {r.reply}</div>}
       {open ? (
         <div style={{ marginTop: 6 }}>
-          <input className="input" maxLength={100} placeholder="예: 내일 1교시 전에 3반 앞에서 줄게요" value={v} onChange={(e) => setV(e.target.value)} />
+          <input className="input" maxLength={100} placeholder="예: 학교에서 만나요. 내일 1교시 전 3반 앞에서 줄게요" value={v} onChange={(e) => setV(e.target.value)} />
           <div className="row" style={{ marginTop: 6 }}>
             <button className="btn sm primary grow" onClick={send}>보내기</button>
             <button className="btn sm" onClick={() => setOpen(false)}>닫기</button>
@@ -347,7 +349,8 @@ function ShareItem({ cid, fid, family, share, say }) {
         <MyReq myReq={myReq} cid={cid} sid={share.id} fid={fid} say={say} onCancel={() => run(() => cancelRequest(cid, share.id, fid), '신청을 취소했어요')} />
       ) : ask ? (
         <div style={{ marginTop: 8 }}>
-          <input className="input" maxLength={100} placeholder="예: 민준이 엄마예요, 주말에 가능해요" value={note} onChange={(e) => setNote(e.target.value)} />
+          <div className="muted" style={{ marginBottom: 6 }}>📌 책은 학교에서 만나서 주고 받아요. 언제 어디서 만날지 적어 주세요.</div>
+          <input className="input" maxLength={100} placeholder="예: 민준이 엄마예요, 내일 아침 교실 앞에서 받을게요" value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="row" style={{ marginTop: 8 }}>
             <button className="btn primary grow" onClick={() => run(async () => { await requestShare(cid, share.id, fid, { nickname: family?.name || '', note }); setAsk(false); setNote(''); }, '신청했어요')}>보내기</button>
             <button className="btn" onClick={() => setAsk(false)}>취소</button>
