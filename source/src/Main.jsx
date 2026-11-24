@@ -25,6 +25,7 @@ export default function Main({ user, profile, kidMode }) {
   const [activeKid, setActiveKid] = useState(kidMode ? profile.kidId : ls.get('bf_kid', ''));
   const [mode, setMode] = useState(kidMode ? 'child' : ls.get('bf_mode', 'parent'));
   const [tab, setTab] = useState('books');
+  const [focus, setFocus] = useState(null); // 설정에서 바로 열 항목
   const [toast, setToast] = useState('');
   const [cheer, setCheer] = useState(null);
   const [pinAsk, setPinAsk] = useState(false);
@@ -219,7 +220,7 @@ export default function Main({ user, profile, kidMode }) {
       </div>
 
       <div className="tabs" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0,1fr))` }}>
-        {tabs.map((t) => <button key={t} className={'tab' + (tab === t ? ' on' : '')} onClick={() => setTab(t)}>{tabLabel[t]}</button>)}
+        {tabs.map((t) => <button key={t} className={'tab' + (tab === t ? ' on' : '')} onClick={() => { setFocus(null); setTab(t); }}>{tabLabel[t]}</button>)}
       </div>
 
       {!kid && !kidMode ? (
@@ -227,14 +228,14 @@ export default function Main({ user, profile, kidMode }) {
       ) : tab === 'books' ? (
         <>
         {isParent && <NoticeBar />}
-        <BookList books={books} records={records} isParent={isParent} onLib={onLib} onRead={onRead} pace={pace} shareHints={shareHints} goToSettings={isParent ? () => setTab('settings') : null} goToClass={isParent ? () => setTab('class') : null} />
+        <BookList books={books} records={records} isParent={isParent} onLib={onLib} onRead={onRead} pace={pace} shareHints={shareHints} goToSettings={isParent ? () => { setFocus('goal'); setTab('settings'); } : null} goToClass={isParent ? () => setTab('class') : null} />
         </>
       ) : tab === 'stats' ? (
         <Stats books={books} records={records} kid={kid} isParent={isParent} family={family} />
       ) : tab === 'class' ? (
         <ClassTab user={user} fid={fid} family={family} kids={kids} books={books} records={records} shares={shares} classReady={classReady} say={say} />
       ) : (
-        <Settings fid={fid} family={family} pace={pace} kids={kids} books={books} activeKid={activeKid} user={user} say={say} />
+        <Settings focus={focus} fid={fid} family={family} pace={pace} kids={kids} books={books} activeKid={activeKid} user={user} say={say} />
       )}
 
       {kidMode && (

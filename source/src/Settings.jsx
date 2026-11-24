@@ -10,17 +10,21 @@ import {
 import { CATS, KID_EMOJIS, parseCsv, downloadCsv, contactHref, CONTACT_EMAIL } from './util';
 import { HelpGuide } from './Help.jsx';
 
-function Section({ title, children, open: o = false }) {
+function Section({ id, title, children, open: o = false }) {
   const [open, setOpen] = useState(o);
+  const ref = useRef();
+  useEffect(() => {
+    if (id && o) setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  }, []); // eslint-disable-line
   return (
-    <div className="glass card">
+    <div className="glass card" ref={ref}>
       <button className="btn block" style={{ textAlign: 'left' }} onClick={() => setOpen(!open)}>{open ? '▾' : '▸'} {title}</button>
       {open && <div style={{ marginTop: 10 }}>{children}</div>}
     </div>
   );
 }
 
-export default function Settings({ fid, family, pace, kids, books, activeKid, user, say }) {
+export default function Settings({ focus, fid, family, pace, kids, books, activeKid, user, say }) {
   const [priv, setPriv] = useState({});
   useEffect(() => onSnapshot(doc(db, 'families', fid, 'private', 'settings'), (s) => setPriv(s.data() || {}), () => {}), [fid]);
   const run = async (fn, okMsg) => {
@@ -94,7 +98,7 @@ export default function Settings({ fid, family, pace, kids, books, activeKid, us
         <HelpGuide />
       </Section>
 
-      <Section title="👧 어린이 관리 · 연결 코드" open>
+      <Section title="👧 어린이 관리 · 연결 코드" open={!focus}>
         {kids.map((k) => (
           <div className="kidrow" key={k.id}>
             <div className="row">
@@ -117,7 +121,7 @@ export default function Settings({ fid, family, pace, kids, books, activeKid, us
         <p className="muted">어린이 기기에서 「어린이 기기 연결」을 누르고 코드를 입력하면 그 어린이의 읽기 상태만 바꿀 수 있어요.</p>
       </Section>
 
-      <Section title="🎯 읽기 목표 (마감일)">
+      <Section id="goal" title="🎯 읽기 목표 (마감일)" open={focus === 'goal'}>
         <p className="muted">마감일과 목표 범위를 정하면 책 탭에 「일주일에 몇 권」이 표시돼요. 가족 모두에게 같은 목표가 적용돼요.</p>
         <label className="f">목표 범위</label>
         <select className="input" value={goal.goalTarget} onChange={(e) => setGoal({ ...goal, goalTarget: e.target.value })}>
