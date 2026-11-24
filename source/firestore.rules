@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    // 구글 등 정식 로그인(익명 제외)
+    function isParentAccount() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // 보호자(부모): families/{fid}/members/{uid} 문서가 있으면 보호자
+    function isMember(fid) {
+      return signedIn() && exists(/databases/$(database)/documents/families/$(fid)/members/$(request.auth.uid));
+    }
+    // 아이 기기: families/{fid}/devices/{uid} 문서가 있으면 아이 기기
+    function isDevice(fid) {
+      return signedIn() && exists(/databases/$(database)/documents/families/$(fid)/devices/$(request.auth.uid));
+    }
+    function isDeviceOf(fid, kid) {
+      return isDevice(fid)
+        && get(/databases/$(database)/documents/families/$(fid)/devices/$(request.auth.uid)).data.kidId == kid;
+    }
+
+    // 내 정보(어느 가족 소속인지)
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // 아이 연결 코드: 코드를 아는 사람만 단건 조회 가능, 목록 조회 불가
+    match /connectCodes/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if isMember(request.resource.data.familyId);
+      allow update: if isMember(resource.data.familyId)
+                    && request.resource.data.familyId == resource.data.familyId;
+      allow delete: if isMember(resource.data.familyId);
+    }
+
+    // 보호자 초대 코드
+    match /invites/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if isMember(request.resource.data.familyId);
+      allow delete: if isMember(resource.data.familyId);
+    }
+
+    match /families/{fid} {
+      allow read: if isMember(fid) || isDevice(fid);
+      allow create: if isParentAccount() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isMember(fid);
+      allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+
+      match /members/{uid} {
+        allow read: if isMember(fid);
+        allow create: if isParentAccount() && request.auth.uid == uid && (
+          get(/databases/$(database)/documents/families/$(fid)).data.ownerUid == uid
+          || (request.resource.data.code is string
+              && exists(/databases/$(database)/documents/invites/$(request.resource.data.code))
+              && get(/databases/$(database)/documents/invites/$(request.resource.data.code)).data.familyId == fid)
+        );
+        allow delete: if isMember(fid)
+          && (uid == request.auth.uid
+              || get(/databases/$(database)/documents/families/$(fid)).data.ownerUid == request.auth.uid);
+      }
+
+      match /devices/{uid} {
+        allow read: if isMember(fid) || (signedIn() && request.auth.uid == uid);
+        allow create: if signedIn() && request.auth.uid == uid
+          && request.resource.data.code is string
+          && exists(/databases/$(database)/documents/connectCodes/$(request.resource.data.code))
+          && get(/databases/$(database)/documents/connectCodes/$(request.resource.data.code)).data.familyId == fid
+          && get(/databases/$(database)/documents/connectCodes/$(request.resource.data.code)).data.kidId == request.resource.data.kidId;
+        allow delete: if isMember(fid) || (signedIn() && request.auth.uid == uid);
+      }
+
+      // PIN 해시, 초대 코드 등 민감 설정: 보호자만
+      match /private/{docId} {
+        allow read, write: if isMember(fid);
+      }
+
+      match /books/{bookId} {
+        allow read: if isMember(fid) || isDevice(fid);
+        allow write: if isMember(fid);
+      }
+
+      match /kids/{kidId} {
+        allow read: if isMember(fid) || isDeviceOf(fid, kidId);
+        allow write: if isMember(fid);
+
+        match /records/{bookId} {
+          allow read: if isMember(fid) || isDeviceOf(fid, kidId);
+          allow write: if isMember(fid);
+          // 아이 기기는 '읽기 상태' 필드만 기록 가능
+          allow create, update: if isDeviceOf(fid, kidId)
+            && request.resource.data.keys().hasOnly(['read', 'done_date', 'updatedAt'])
+            && request.resource.data.read in ['none', 'reading', 'done'];
+        }
+      }
+    }
+  }
+}
