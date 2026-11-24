@@ -94,7 +94,7 @@ export function ShareSteps() {
       </ol>
       <ul className="plain sharenotes">
         <li>🚫 글과 메모에 <b>전화번호·주소는 적지 마세요.</b></li>
-        <li>🔔 알림이 없어요. 며칠에 한 번 「책 나눔」을 확인해 주세요.</li>
+        <li>🔔 앱 알림 기능은 추후 업데이트 예정입니다.</li>
         <li>✏️ 신청 메모는 「메모 고쳐 보내기」로 다시 쓸 수 있어요.</li>
         <li>🤝 판매·거래 없이 나눔과 빌려주기만 해요.</li>
       </ul>
