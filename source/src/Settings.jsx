@@ -18,7 +18,7 @@ function Section({ title, children, open: o = false }) {
   );
 }
 
-export default function Settings({ fid, family, kids, books, activeKid, user, say }) {
+export default function Settings({ fid, family, pace, kids, books, activeKid, user, say }) {
   const [priv, setPriv] = useState({});
   useEffect(() => onSnapshot(doc(db, 'families', fid, 'private', 'settings'), (s) => setPriv(s.data() || {}), () => {}), [fid]);
   const run = async (fn, okMsg) => {
@@ -37,6 +37,8 @@ export default function Settings({ fid, family, kids, books, activeKid, user, sa
   /* 가족 */
   const [fi, setFi] = useState({ name: family?.name || '', school: family?.school || '', className: family?.className || '' });
   const [legacyMsg, setLegacyMsg] = useState('');
+  /* 읽기 목표 */
+  const [goal, setGoal] = useState({ deadline: family?.deadline || '', goalTarget: family?.goalTarget || 'all' });
 
   const nextOrder = books.length ? Math.max(...books.map((b) => b.order ?? 0)) + 1 : 0;
 
@@ -65,7 +67,7 @@ export default function Settings({ fid, family, kids, books, activeKid, user, sa
           <div className="kidrow" key={k.id}>
             <div className="row">
               <div className="grow" style={{ fontSize: '1.15rem' }}>{k.emoji} {k.name}</div>
-              <button className="btn sm danger" onClick={() => confirm(`${k.name} 프로필과 읽기 기록을 모두 삭제할까요?`) && run(() => removeKid(fid, k), '삭제했어요')}>삭제</button>
+              <button className="btn sm danger" onClick={() => confirm(`${k.name} 프로필과 읽기 기록을 모두 삭제할까요?`) && run(() => removeKid(fid, k, family?.classId), '삭제했어요')}>삭제</button>
             </div>
             <div className="muted" style={{ margin: '6px 0 4px' }}>아이 기기 연결 코드</div>
             <div className="code-box">{k.connectCode}</div>
@@ -81,6 +83,21 @@ export default function Settings({ fid, family, kids, books, activeKid, user, sa
           await run(() => addKid(fid, { name: kName.trim(), emoji: kEmoji, order: kids.length }), '아이를 추가했어요'); setKName('');
         }}>추가하기</button>
         <p className="muted">아이 기기에서 「아이 기기 연결」을 누르고 코드를 입력하면 그 아이의 읽기 상태만 바꿀 수 있어요.</p>
+      </Section>
+
+      <Section title="🎯 읽기 목표 (마감일)">
+        <p className="muted">마감일과 목표 범위를 정하면 책 탭에 「일주일에 몇 권」이 표시돼요. 가족 모두에게 같은 목표가 적용돼요.</p>
+        <label className="f">목표 범위</label>
+        <select className="input" value={goal.goalTarget} onChange={(e) => setGoal({ ...goal, goalTarget: e.target.value })}>
+          <option value="all">전체 도서</option><option value="selected">선정도서만</option>
+        </select>
+        <label className="f">마감일</label>
+        <input className="input" type="date" value={goal.deadline} onChange={(e) => setGoal({ ...goal, deadline: e.target.value })} />
+        <div className="row" style={{ marginTop: 10 }}>
+          <button className="btn primary grow" onClick={() => goal.deadline ? run(() => updateFamilyInfo(fid, goal), '목표를 저장했어요') : say('마감일을 골라 주세요')}>저장</button>
+          {family?.deadline && <button className="btn grow danger" onClick={() => run(async () => { await updateFamilyInfo(fid, { deadline: '' }); setGoal({ ...goal, deadline: '' }); }, '목표를 해제했어요')}>해제</button>}
+        </div>
+        {pace?.hasGoal && pace.level !== 'over' && pace.level !== 'complete' && <div className="ok">지금 기준: 남은 {pace.remaining}권 → 일주일에 {pace.perWeek}권</div>}
       </Section>
 
       <Section title="👪 보호자 초대 (배우자 등)">

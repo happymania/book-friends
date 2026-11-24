@@ -1,6 +1,6 @@
 import {
   doc, collection, getDoc, setDoc, updateDoc, deleteDoc, getDocs, query, where,
-  writeBatch, serverTimestamp,
+  writeBatch, serverTimestamp, deleteField,
 } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { auth, db, firebaseConfig } from './firebase';
@@ -125,7 +125,8 @@ export async function regenConnectCode(fid, kid) {
 export async function renameKid(fid, kidId, name, emoji) {
   await updateDoc(fdoc(fid, 'kids', kidId), { name, emoji });
 }
-export async function removeKid(fid, kid) {
+export async function removeKid(fid, kid, classId) {
+  if (classId) await deleteDoc(doc(db, 'classes', classId, 'stats', kid.id)).catch(() => {});
   const recs = await getDocs(fcol(fid, 'kids', kid.id, 'records'));
   await commitChunks(recs.docs.map((d) => (b) => b.delete(d.ref)));
   const devs = await getDocs(query(fcol(fid, 'devices'), where('kidId', '==', kid.id)));
@@ -186,4 +187,95 @@ export async function importLegacy(fid, kidId, books) {
   });
   await commitChunks(ops);
   return n;
+}
+
+/* ---------- 학급 ---------- */
+const cdoc = (cid, ...p) => doc(db, 'classes', cid, ...p);
+const ccol = (cid, ...p) => collection(db, 'classes', cid, ...p);
+
+// 반 만들기: 내 가족을 첫 구성원으로 등록하고 참여 코드를 발급
+export async function createClass(user, fid, { name, school, className }) {
+  const cid = doc(collection(db, 'classes')).id;
+  const code = genCode(6);
+  await setDoc(cdoc(cid), { name, school: school || '', className: className || '', code, ownerUid: user.uid, createdAt: serverTimestamp() });
+  await setDoc(cdoc(cid, 'members', user.uid), { familyId: fid, code, createdAt: serverTimestamp() });
+  await setDoc(doc(db, 'classCodes', code), { classId: cid });
+  await updateDoc(fdoc(fid), { classId: cid, classCode: code, classShare: true });
+  return cid;
+}
+
+// 코드로 반 참여
+export async function joinClass(user, fid, rawCode) {
+  const code = rawCode.trim().toUpperCase();
+  const snap = await getDoc(doc(db, 'classCodes', code));
+  if (!snap.exists()) throw new Error('학급 코드를 찾을 수 없어요. 다시 확인해 주세요.');
+  const cid = snap.data().classId;
+  await setDoc(cdoc(cid, 'members', user.uid), { familyId: fid, code, createdAt: serverTimestamp() });
+  await updateDoc(fdoc(fid), { classId: cid, classCode: code, classShare: true });
+  return cid;
+}
+
+// 배우자 등 같은 가족의 다른 보호자 계정이 처음 들어왔을 때 자동 참여
+export async function ensureClassMember(user, fid, cid, code) {
+  try {
+    const me = await getDoc(cdoc(cid, 'members', user.uid));
+    if (me.exists()) return true;
+    if (!code) return false;
+    await setDoc(cdoc(cid, 'members', user.uid), { familyId: fid, code, createdAt: serverTimestamp() });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// 반 나가기: 우리 가족의 통계·구성원 정보 삭제 후 가족 문서에서 학급 연결 해제
+export async function leaveClass(user, fid, cid, kids) {
+  await Promise.all(kids.map((k) => deleteDoc(cdoc(cid, 'stats', k.id)).catch(() => {})));
+  // 우리 가족 나눔 글과 신청 정리
+  const shares = await getDocs(query(ccol(cid, 'shares'), where('familyId', '==', fid)));
+  for (const sh of shares.docs) await deleteShare(cid, sh.id);
+  const mine = await getDocs(query(ccol(cid, 'members'), where('familyId', '==', fid)));
+  const others = mine.docs.filter((d) => d.id !== user.uid);
+  await Promise.all(others.map((d) => deleteDoc(d.ref)));
+  await deleteDoc(cdoc(cid, 'members', user.uid));
+  await updateDoc(fdoc(fid), { classId: deleteField(), classCode: deleteField(), classShare: deleteField() });
+}
+
+export function setClassShare(fid, on) {
+  return updateDoc(fdoc(fid), { classShare: !!on });
+}
+
+/* ---------- 학급 통계(숫자만) ---------- */
+export function syncStats(cid, fid, kidId, payload) {
+  return setDoc(cdoc(cid, 'stats', kidId), { familyId: fid, ...payload, updatedAt: serverTimestamp() });
+}
+export function deleteStats(cid, kidId) {
+  return deleteDoc(cdoc(cid, 'stats', kidId)).catch(() => {});
+}
+
+/* ---------- 책 나눔 ---------- */
+export async function addShare(cid, fid, { kind, title, bookId, note, nickname }) {
+  const ref = doc(ccol(cid, 'shares'));
+  await setDoc(ref, {
+    kind, title: title.trim().slice(0, 80), bookId: bookId || '', note: (note || '').trim().slice(0, 100),
+    nickname: (nickname || '').trim().slice(0, 30), familyId: fid, status: 'open', createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+export async function setShareStatus(cid, share, status) {
+  const { id, ...rest } = share;
+  await setDoc(cdoc(cid, 'shares', id), { ...rest, status });
+}
+export async function deleteShare(cid, sid) {
+  const reqs = await getDocs(ccol(cid, 'shares', sid, 'requests')).catch(() => ({ docs: [] }));
+  await Promise.all(reqs.docs.map((d) => deleteDoc(d.ref)));
+  await deleteDoc(cdoc(cid, 'shares', sid));
+}
+export function requestShare(cid, sid, fid, { nickname, note }) {
+  return setDoc(cdoc(cid, 'shares', sid, 'requests', fid), {
+    familyId: fid, nickname: (nickname || '').trim().slice(0, 30), note: (note || '').trim().slice(0, 100), createdAt: serverTimestamp(),
+  });
+}
+export function cancelRequest(cid, sid, fid) {
+  return deleteDoc(cdoc(cid, 'shares', sid, 'requests', fid));
 }

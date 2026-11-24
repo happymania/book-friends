@@ -21,6 +21,24 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/families/$(fid)/devices/$(request.auth.uid)).data.kidId == kid;
     }
 
+    // 학급 구성원(보호자 계정만): classes/{cid}/members/{uid}
+    function isClassMember(cid) {
+      return signedIn() && exists(/databases/$(database)/documents/classes/$(cid)/members/$(request.auth.uid));
+    }
+    function classOwner(cid) {
+      return get(/databases/$(database)/documents/classes/$(cid)).data.ownerUid;
+    }
+    function shareOwnerFamily(cid, sid) {
+      return get(/databases/$(database)/documents/classes/$(cid)/shares/$(sid)).data.familyId;
+    }
+    // 학급 통계를 쓸 수 있는 사람: (보호자 + 학급 구성원) 또는 해당 아이의 기기, 단 가족이 그 학급에 속해 있어야 함
+    function canWriteStat(cid, fid, kid) {
+      return signedIn()
+        && ((isMember(fid) && isClassMember(cid)) || isDeviceOf(fid, kid))
+        && get(/databases/$(database)/documents/families/$(fid)).data.get('classId', '') == cid
+        && exists(/databases/$(database)/documents/families/$(fid)/kids/$(kid));
+    }
+
     // 내 정보(어느 가족 소속인지)
     match /users/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
@@ -44,10 +62,94 @@ service cloud.firestore {
       allow delete: if isMember(resource.data.familyId);
     }
 
+    // 학급 참여 코드: 코드를 아는 사람만 단건 조회
+    match /classCodes/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if isParentAccount() && classOwner(request.resource.data.classId) == request.auth.uid;
+      allow delete: if isParentAccount() && classOwner(resource.data.classId) == request.auth.uid;
+    }
+
+    // 학급(반): 구성원은 보호자 계정만. 아이 기기는 접근 불가
+    match /classes/{cid} {
+      allow read: if isClassMember(cid);
+      allow create: if isParentAccount() && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isParentAccount() && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if isParentAccount() && resource.data.ownerUid == request.auth.uid;
+
+      match /members/{uid} {
+        allow read: if isClassMember(cid) || (signedIn() && request.auth.uid == uid);
+        allow create: if isParentAccount() && request.auth.uid == uid
+          && request.resource.data.familyId is string
+          && isMember(request.resource.data.familyId)
+          && (classOwner(cid) == uid
+              || (request.resource.data.code is string
+                  && exists(/databases/$(database)/documents/classCodes/$(request.resource.data.code))
+                  && get(/databases/$(database)/documents/classCodes/$(request.resource.data.code)).data.classId == cid));
+        allow delete: if signedIn() && (uid == request.auth.uid || isMember(resource.data.familyId));
+      }
+
+      // 아이별 집계용 숫자(이름 없음)
+      match /stats/{kidId} {
+        allow read: if isClassMember(cid);
+        allow create: if request.resource.data.familyId is string
+          && canWriteStat(cid, request.resource.data.familyId, kidId)
+          && request.resource.data.keys().hasOnly(['familyId', 'done', 'selDone', 'reading', 'doneIds', 'readingIds', 'updatedAt'])
+          && request.resource.data.done is number && request.resource.data.selDone is number
+          && request.resource.data.reading is number
+          && request.resource.data.doneIds is list && request.resource.data.doneIds.size() <= 300
+          && request.resource.data.readingIds is list && request.resource.data.readingIds.size() <= 300;
+        allow update: if resource.data.familyId == request.resource.data.familyId
+          && canWriteStat(cid, request.resource.data.familyId, kidId)
+          && request.resource.data.keys().hasOnly(['familyId', 'done', 'selDone', 'reading', 'doneIds', 'readingIds', 'updatedAt'])
+          && request.resource.data.done is number && request.resource.data.selDone is number
+          && request.resource.data.reading is number
+          && request.resource.data.doneIds is list && request.resource.data.doneIds.size() <= 300
+          && request.resource.data.readingIds is list && request.resource.data.readingIds.size() <= 300;
+        allow delete: if signedIn() && isMember(resource.data.familyId);
+      }
+
+      // 책 나눔 게시판
+      match /shares/{sid} {
+        allow read: if isClassMember(cid);
+        allow create: if isParentAccount() && isClassMember(cid)
+          && request.resource.data.familyId is string && isMember(request.resource.data.familyId)
+          && request.resource.data.kind in ['offer', 'want']
+          && request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() <= 80
+          && request.resource.data.bookId is string
+          && request.resource.data.note is string && request.resource.data.note.size() <= 100
+          && request.resource.data.nickname is string && request.resource.data.nickname.size() <= 30
+          && request.resource.data.status == 'open'
+          && request.resource.data.keys().hasOnly(['kind', 'title', 'bookId', 'note', 'nickname', 'familyId', 'status', 'createdAt']);
+        allow update: if isMember(resource.data.familyId)
+          && request.resource.data.familyId == resource.data.familyId
+          && request.resource.data.status in ['open', 'done']
+          && request.resource.data.keys().hasOnly(['kind', 'title', 'bookId', 'note', 'nickname', 'familyId', 'status', 'createdAt']);
+        allow delete: if isMember(resource.data.familyId);
+
+        // 나눔 신청: 글쓴이 가족과 신청한 가족만 열람
+        match /requests/{rid} {
+          allow read: if isMember(rid) || isMember(shareOwnerFamily(cid, sid));
+          allow create: if isParentAccount() && isClassMember(cid)
+            && request.resource.data.familyId == rid && isMember(rid)
+            && shareOwnerFamily(cid, sid) != rid
+            && get(/databases/$(database)/documents/classes/$(cid)/shares/$(sid)).data.status == 'open'
+            && request.resource.data.nickname is string && request.resource.data.nickname.size() <= 30
+            && request.resource.data.note is string && request.resource.data.note.size() <= 100
+            && request.resource.data.keys().hasOnly(['familyId', 'nickname', 'note', 'createdAt']);
+          allow delete: if isMember(rid) || isMember(shareOwnerFamily(cid, sid));
+        }
+      }
+    }
+
     match /families/{fid} {
       allow read: if isMember(fid) || isDevice(fid);
       allow create: if isParentAccount() && request.resource.data.ownerUid == request.auth.uid;
-      allow update: if isMember(fid);
+      allow update: if isMember(fid)
+        && (request.resource.data.get('classId', '') == resource.data.get('classId', '')
+            || request.resource.data.get('classId', '') == ''
+            || isClassMember(request.resource.data.classId));
       allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
 
       match /members/{uid} {

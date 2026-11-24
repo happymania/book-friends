@@ -136,3 +136,31 @@ mark { background: #ffe58a; border-radius: 4px; padding: 0 2px; }
 .booktbl .it .nm { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .pad-bottom { height: 30px; }
 @media (max-width: 480px) { .glass { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); } .blob { filter: blur(40px); } }
+
+/* ---- 읽기 목표 ---- */
+.pace { padding: 14px 16px; }
+.pace .pace-msg { margin: 8px 0 4px; font-size: 1.05rem; }
+.pace.lv-tight { border-color: rgba(214,69,69,.5); }
+.pace.lv-complete { border-color: rgba(46,158,91,.6); }
+
+/* ---- 배지 ---- */
+.streak { margin-bottom: 10px; font-size: 1.05rem; }
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.bdg { text-align: center; padding: 10px 4px; border-radius: 16px; background: rgba(255,255,255,.5); border: 1px solid var(--line); opacity: .55; filter: grayscale(.8); }
+.bdg.on { opacity: 1; filter: none; background: var(--orange-l); border-color: rgba(255,140,66,.5); }
+.bdg .e { font-size: 1.8rem; line-height: 1.2; }
+.bdg .nm { font-size: .85rem; margin-top: 2px; }
+.bdg .pg { font-size: .75rem; color: var(--ink-s); }
+.newbadges { margin: 10px 0; padding: 10px; border-radius: 14px; background: var(--orange-l); }
+.newbadges .nb { font-size: 1.15rem; margin-top: 4px; color: var(--orange-d); }
+.newbadges .e { font-size: 1.5rem; }
+
+/* ---- 학급 · 책 나눔 ---- */
+ul.plain { margin: 8px 0 0; padding-left: 1.2em; line-height: 1.7; }
+.code-input { text-align: center; letter-spacing: .25em; font-size: 1.3rem; text-transform: uppercase; }
+.switch { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.switch input { width: 24px; height: 24px; flex: none; }
+.share.done { opacity: .6; }
+.share .reqs { margin-top: 8px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.6); }
+.share .reqs .it { padding: 4px 0; }
+.sharetag { display: block; width: 100%; min-height: 44px; margin-top: 8px; border-radius: 12px; border: 1px dashed var(--purple); background: rgba(138,92,214,.1); color: #5b3aa6; font-size: .95rem; text-align: left; padding: 6px 12px; }

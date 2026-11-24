@@ -2,10 +2,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
-import { hasPin, verifyPin, setLib, setRead, disconnectKidDevice } from './db';
+import { hasPin, verifyPin, setLib, setRead, disconnectKidDevice, ensureClassMember, syncStats, deleteStats } from './db';
+import { computePace, computeBadges, earnedIds, statPayload, titleKey } from './logic';
+import { today } from './util';
 import BookList from './BookList.jsx';
 import Stats from './Stats.jsx';
 import Settings from './Settings.jsx';
+import ClassTab from './Class.jsx';
 
 const ls = {
   get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
@@ -25,7 +28,11 @@ export default function Main({ user, profile, kidMode }) {
   const [cheer, setCheer] = useState(null);
   const [pinAsk, setPinAsk] = useState(false);
   const [loadErr, setLoadErr] = useState('');
+  const [recKid, setRecKid] = useState('');
+  const [classReady, setClassReady] = useState(false);
+  const [shares, setShares] = useState([]);
   const toastTimer = useRef();
+  const lastStat = useRef('');
 
   const say = (m) => { setToast(m); clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToast(''), 2200); };
 
@@ -58,13 +65,65 @@ export default function Main({ user, profile, kidMode }) {
   // 선택된 아이의 기록
   useEffect(() => {
     setRecords({});
+    setRecKid('');
     if (!activeKid) return;
     return onSnapshot(collection(db, 'families', fid, 'kids', activeKid, 'records'), (s) => {
       const m = {};
       s.docs.forEach((d) => { m[d.id] = d.data(); });
       setRecords(m);
+      setRecKid(activeKid);
     }, (e) => setLoadErr('기록을 불러오지 못했어요: ' + (e.code || e.message)));
   }, [fid, activeKid]);
+
+  const cid = family?.classId || '';
+  const classCode = family?.classCode || '';
+
+  // 학급 연결: 같은 가족의 다른 보호자 계정은 처음 열 때 자동으로 반 구성원이 됨
+  useEffect(() => {
+    setClassReady(false);
+    setShares([]);
+    if (!cid) return;
+    if (kidMode) return; // 아이 기기는 학급 정보를 볼 수 없음
+    let off = () => {};
+    let dead = false;
+    ensureClassMember(user, fid, cid, classCode).then((ok) => {
+      if (dead) return;
+      setClassReady(ok);
+      if (ok) off = onSnapshot(collection(db, 'classes', cid, 'shares'), (s) => setShares(s.docs.map((d) => ({ id: d.id, ...d.data() }))), () => {});
+    });
+    return () => { dead = true; off(); };
+  }, [cid, classCode, fid, kidMode, user]);
+
+  // 학급 집계용 숫자(이름 없음) 동기화
+  useEffect(() => {
+    if (!cid || !activeKid || recKid !== activeKid || !books.length) return;
+    if (!kidMode && !classReady) return;
+    const share = family?.classShare !== false;
+    const payload = statPayload(books, records);
+    const key = cid + '|' + activeKid + '|' + share + '|' + JSON.stringify(payload);
+    if (key === lastStat.current) return;
+    const t = setTimeout(() => {
+      lastStat.current = key;
+      if (share) syncStats(cid, fid, activeKid, payload).catch(() => { lastStat.current = ''; });
+      else if (!kidMode) deleteStats(cid, activeKid);
+    }, 900);
+    return () => clearTimeout(t);
+  }, [cid, fid, activeKid, recKid, books, records, family?.classShare, classReady, kidMode]);
+
+  const pace = useMemo(() => computePace({ books, records, family, today: today() }), [books, records, family]);
+
+  // 우리 반에서 나눔 중인 책(아직 없는 책에만 표시)
+  const shareHints = useMemo(() => {
+    const m = {};
+    if (!classReady) return m;
+    const offers = shares.filter((x) => x.kind === 'offer' && x.status === 'open' && x.familyId !== fid);
+    books.forEach((b) => {
+      if ((b.lib || 'none') !== 'none') return;
+      const n = offers.filter((x) => x.bookId === b.id || titleKey(x.title) === titleKey(b.title)).length;
+      if (n) m[b.id] = n;
+    });
+    return m;
+  }, [shares, books, fid, classReady]);
 
   const kid = kids.find((k) => k.id === activeKid);
   const isParent = !kidMode && mode === 'parent';
@@ -84,12 +143,17 @@ export default function Main({ user, profile, kidMode }) {
     const cur = records[b.id]?.read || 'none';
     const next = cur === val ? 'none' : val;
     setRead(fid, activeKid, b.id, next, records[b.id]?.done_date).catch((e) => say('저장 실패: ' + (e.code || e.message)));
-    if (next === 'done') setCheer(b.title);
+    if (next === 'done') {
+      const after = { ...records, [b.id]: { ...records[b.id], read: 'done', done_date: records[b.id]?.done_date || today() } };
+      const before = earnedIds(computeBadges(books, records, today()));
+      const res = computeBadges(books, after, today());
+      setCheer({ title: b.title, badges: res.badges.filter((x) => x.earned && !before.has(x.id)) });
+    }
     else say(next === 'reading' ? '📖 지금 읽는 중!' : '상태 초기화');
   };
 
-  const tabs = isParent ? ['books', 'stats', 'settings'] : ['books', 'stats'];
-  const tabLabel = { books: '📚 책 목록', stats: '📊 통계', settings: '⚙️ 설정' };
+  const tabs = isParent ? ['books', 'stats', 'class', 'settings'] : ['books', 'stats'];
+  const tabLabel = { books: '📚 책', stats: '📊 통계', class: '🏫 학급', settings: '⚙️ 설정' };
 
   if (loadErr) {
     return <div className="wrap"><div className="glass card"><h2>앗, 문제가 생겼어요</h2><p className="err">{loadErr}</p>
@@ -125,18 +189,20 @@ export default function Main({ user, profile, kidMode }) {
         {kidMode && kid && <div style={{ marginTop: 6, fontSize: '1.2rem' }}>{kid.emoji} {kid.name}의 독서 기록</div>}
       </div>
 
-      <div className={'tabs' + (tabs.length === 2 ? ' two' : '')}>
+      <div className="tabs" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0,1fr))` }}>
         {tabs.map((t) => <button key={t} className={'tab' + (tab === t ? ' on' : '')} onClick={() => setTab(t)}>{tabLabel[t]}</button>)}
       </div>
 
       {!kid && !kidMode ? (
         <div className="glass card empty">아이 프로필이 없어요. 설정 탭에서 추가해 주세요.</div>
       ) : tab === 'books' ? (
-        <BookList books={books} records={records} isParent={isParent} onLib={onLib} onRead={onRead} />
+        <BookList books={books} records={records} isParent={isParent} onLib={onLib} onRead={onRead} pace={pace} shareHints={shareHints} goToSettings={isParent ? () => setTab('settings') : null} goToClass={isParent ? () => setTab('class') : null} />
       ) : tab === 'stats' ? (
         <Stats books={books} records={records} kid={kid} isParent={isParent} family={family} />
+      ) : tab === 'class' ? (
+        <ClassTab user={user} fid={fid} family={family} kids={kids} books={books} records={records} shares={shares} classReady={classReady} say={say} />
       ) : (
-        <Settings fid={fid} family={family} kids={kids} books={books} activeKid={activeKid} user={user} say={say} />
+        <Settings fid={fid} family={family} pace={pace} kids={kids} books={books} activeKid={activeKid} user={user} say={say} />
       )}
 
       {kidMode && (
@@ -154,7 +220,13 @@ export default function Main({ user, profile, kidMode }) {
           <div className="glass modal">
             <div className="big-emoji">🎉</div>
             <h2>완독 축하해요!</h2>
-            <p>「{cheer}」를 다 읽었어요. 정말 대단해요! 🏆</p>
+            <p>「{cheer.title}」를 다 읽었어요. 정말 대단해요! 🏆</p>
+            {cheer.badges.length > 0 && (
+              <div className="newbadges">
+                <div className="muted">새 배지를 얻었어요!</div>
+                {cheer.badges.map((x) => <div className="nb" key={x.id}><span className="e">{x.icon}</span> {x.name}</div>)}
+              </div>
+            )}
             <button className="btn primary block" onClick={() => setCheer(null)}>고마워요</button>
           </div>
         </div>

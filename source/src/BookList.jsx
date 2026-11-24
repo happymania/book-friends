@@ -8,7 +8,40 @@ function hl(text, q) {
   return <>{text.slice(0, i)}<mark>{text.slice(i, i + q.length)}</mark>{text.slice(i + q.length)}</>;
 }
 
-export default function BookList({ books, records, isParent, onLib, onRead }) {
+const PACE_MSG = {
+  complete: ['🎉', '목표를 모두 달성했어요! 정말 대단해요.'],
+  over: ['⏰', '마감일이 지났어요. 남은 책은 천천히 이어서 읽어 봐요.'],
+  easy: ['😊', '여유 있어요. 일주일에 1권이면 충분해요.'],
+  ok: ['👍', '좋은 페이스예요. 꾸준히만 가면 돼요.'],
+  tight: ['🔥', '조금 서둘러야 해요. 이번 주 목표를 정해 볼까요?'],
+  none: ['📚', '목표로 삼을 책이 없어요.'],
+};
+
+function PaceCard({ pace, goToSettings }) {
+  if (!pace.hasGoal) {
+    if (!goToSettings) return null;
+    return (
+      <div className="glass card pace">
+        <div className="row"><div className="grow"><b>🎯 읽기 목표</b><div className="muted">마감일을 정하면 일주일에 몇 권씩 읽어야 하는지 알려 드려요.</div></div>
+          <button className="btn sm" onClick={goToSettings}>정하기</button></div>
+      </div>
+    );
+  }
+  const [icon, msg] = PACE_MSG[pace.level] || PACE_MSG.ok;
+  const pct = pace.total ? Math.round((pace.done / pace.total) * 100) : 0;
+  return (
+    <div className={'glass card pace lv-' + pace.level}>
+      <div className="stat-row"><b>🎯 {pace.targetLabel} 목표</b><span>{pace.done} / {pace.total}권 ({pct}%)</span></div>
+      <div className="bar"><i style={{ width: pct + '%', background: 'linear-gradient(90deg,#ffb26b,#ff7a3d)' }} /></div>
+      <div className="pace-msg">{icon} {msg}</div>
+      {pace.level !== 'complete' && pace.level !== 'over' && pace.level !== 'none' && (
+        <div className="muted">마감까지 {pace.days}일 · 남은 책 {pace.remaining}권 → <b>일주일에 {pace.perWeek}권</b> (이번 주 {pace.thisWeek}권 완독)</div>
+      )}
+    </div>
+  );
+}
+
+export default function BookList({ books, records, isParent, onLib, onRead, pace, shareHints = {}, goToSettings, goToClass }) {
   const [type, setType] = useState('전체');
   const [status, setStatus] = useState('전체');
   const [q, setQ] = useState('');
@@ -32,6 +65,7 @@ export default function BookList({ books, records, isParent, onLib, onRead }) {
 
   return (
     <>
+      {pace && <PaceCard pace={pace} goToSettings={goToSettings} />}
       <div className="sum">
         <div className="glass box"><div className="n">{sum.total - sum.reading - sum.done}</div><div className="l">안 읽음</div></div>
         <div className="glass box"><div className="n" style={{ color: 'var(--blue)' }}>{sum.reading}</div><div className="l">읽는 중</div></div>
@@ -65,6 +99,9 @@ export default function BookList({ books, records, isParent, onLib, onRead }) {
             <div className="t">{hl(b.title, q.trim())}</div>
             {isParent ? (
               <>
+                {shareHints[b.id] > 0 && r !== 'done' && (
+                  <button className="sharetag" onClick={goToClass}>🤝 우리 반 나눔 {shareHints[b.id]}건 · 보러 가기</button>
+                )}
                 <div className="label-row">도서 확보</div>
                 <div className="btns">
                   {['borrowed', 'returned', 'purchased'].map((k) => (

@@ -1,5 +1,6 @@
 import React from 'react';
 import { LIB, READ, downloadCsv, today } from './util';
+import { computeBadges } from './logic';
 
 function Prog({ label, d, t, color }) {
   const pct = t ? Math.round((d / t) * 100) : 0;
@@ -23,6 +24,9 @@ export default function Stats({ books, records, kid, isParent, family }) {
     .map((b) => ({ ...b, date: records[b.id]?.done_date || '' }))
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
+  const bd = computeBadges(books, records, today());
+  const earnedN = bd.badges.filter((x) => x.earned).length;
+
   function exportCsv() {
     const rows = [['구분', '분류', '제목', '도서확보', '읽기상태', '완독일']];
     books.forEach((b) => rows.push([b.type, b.cat, b.title, LIB[b.lib || 'none'].label, READ[rd(b)].label.replace('!', ''), records[b.id]?.done_date || '']));
@@ -36,6 +40,20 @@ export default function Stats({ books, records, kid, isParent, family }) {
         <Prog label="전체" d={dn(books)} t={books.length} color="linear-gradient(90deg,#ffb26b,#ff7a3d)" />
         <Prog label="선정도서" d={dn(sel)} t={sel.length} color="linear-gradient(90deg,#ff9b9b,#e05a5a)" />
         <Prog label="권장도서" d={dn(rec)} t={rec.length} color="linear-gradient(90deg,#8bbcff,#4b86e0)" />
+      </div>
+      <div className="glass card">
+        <h2>🏅 배지 ({earnedN}/{bd.badges.length})</h2>
+        <div className="streak">🔥 연속 읽기 <b>{bd.streak}주</b> · 이번 달 <b>{bd.monthCount}권</b></div>
+        <div className="badges">
+          {bd.badges.map((x) => (
+            <div key={x.id} className={'bdg' + (x.earned ? ' on' : '')} title={x.desc}>
+              <div className="e">{x.icon}</div>
+              <div className="nm">{x.name}</div>
+              <div className="pg">{x.earned ? '획득!' : x.progress}</div>
+            </div>
+          ))}
+        </div>
+        <p className="muted">배지는 완독 기록으로 자동 계산돼요. 완독을 취소하면 함께 사라져요.</p>
       </div>
       <div className="glass card">
         <h2>분류별 완독</h2>
