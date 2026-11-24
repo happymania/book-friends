@@ -220,12 +220,12 @@ function Board({ cid, fid, family, books, shares, say, chatUrl }) {
         {CHAT_ENABLED && chatUrl && /^https:\/\//.test(chatUrl) && (
           <a className="btn block chatlink" href={chatUrl} target="_blank" rel="noopener noreferrer">💬 학급 단톡방 열기 (연락은 여기서)</a>
         )}
-        <div className="meetnote">📌 책은 <b>학교에서 만나서 주고 받아요.</b></div>
+        <div className="meetnote">📌 약속한 시간에 학교에서 만나 <b>어린이끼리 주고 받아요.</b></div>
         <details className="help-item" open={shares.length === 0}>
           <summary>❓ 책 나눔은 이렇게 해요</summary>
           <div className="help-body"><ShareSteps /></div>
         </details>
-        <p className="muted">신청과 답장은 앱 안의 짧은 메모로 주고받고, 책은 학교에서 어린이 편으로 교환해요.<br />책 나눔 글과 메모에는<br /><b>전화번호나 주소를 적지 마세요.</b><br />판매·거래는 없고 나눔과 빌려주기만 해요.</p>
+        <p className="muted">신청과 답장은 앱 안의 짧은 메모로 주고받고, 책은 학교에서 어린이끼리 주고 받아요.<br />책 나눔 글과 메모에는<br /><b>전화번호나 주소를 적지 마세요.</b><br />판매·거래는 없고 나눔과 빌려주기만 해요.</p>
       </div>
       {adding && <ShareForm cid={cid} fid={fid} family={family} books={books} say={say} onDone={() => setAdding(false)} />}
       {list.length === 0 && <div className="glass card empty">아직 글이 없어요.</div>}
@@ -254,7 +254,7 @@ function ShareForm({ cid, fid, family, books, say, onDone }) {
       <label className="f">책 제목</label>
       <input className="input" list="bf-books" maxLength={80} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="목록에서 고르거나 직접 입력" />
       <datalist id="bf-books">{books.map((b) => <option key={b.id} value={b.title} />)}</datalist>
-      <div className="meetnote">📌 책은 학교에서 만나서 주고 받아요. 만날 시간·장소는 신청 메모와 답장으로 정해요.</div>
+      <div className="meetnote">📌 약속한 시간에 학교에서 만나 어린이끼리 주고 받아요. 만날 시간·장소는 신청 메모와 답장으로 정해요.</div>
       <label className="f">한마디 (선택, 100자)</label>
       <input className="input" maxLength={100} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} placeholder="예: 깨끗해요. 다음 주까지 가능" />
       <label className="f">표시 이름 (30자)</label>
@@ -277,7 +277,7 @@ function ReqRow({ r, cid, sid, say }) {
       {r.reply && <div className="muted">내 답장: {r.reply}</div>}
       {open ? (
         <div style={{ marginTop: 6 }}>
-          <input className="input" maxLength={100} placeholder="예: 학교에서 만나요. 내일 1교시 전 3반 앞에서 줄게요" value={v} onChange={(e) => setV(e.target.value)} />
+          <input className="input" maxLength={100} placeholder="예: 월요일 학교에서 나눔해요~" value={v} onChange={(e) => setV(e.target.value)} />
           <div className="row" style={{ marginTop: 6 }}>
             <button className="btn sm primary grow" onClick={send}>보내기</button>
             <button className="btn sm" onClick={() => setOpen(false)}>닫기</button>
@@ -346,7 +346,7 @@ function ShareItem({ cid, fid, family, share, say }) {
         <>
           {reqs.length > 0 && (
             <div className="reqs">
-              <div className="label-row">신청 {reqs.length}건 · 답장 메모를 남기고, 책은 학교에서 어린이 편으로 전달해요</div>
+              <div className="label-row">신청 {reqs.length}건 · 답장 메모를 남기고, 책은 학교에서 어린이끼리 주고 받아요</div>
               {reqs.map((r) => <ReqRow key={r.familyId} r={r} cid={cid} sid={share.id} say={say} />)}
             </div>
           )}
@@ -360,7 +360,7 @@ function ShareItem({ cid, fid, family, share, say }) {
       ) : ask ? (
         <div style={{ marginTop: 8 }}>
           <div className="muted" style={{ marginBottom: 6 }}>📌 책은 학교에서 만나서 주고 받아요. 언제 어디서 만날지 적어 주세요.</div>
-          <input className="input" maxLength={100} placeholder="예: 정빈이 엄마예요, 내일 아침 교실 앞에서 받을게요" value={note} onChange={(e) => setNote(e.target.value)} />
+          <input className="input" maxLength={100} placeholder="예: 정빈이 엄마에요. 다음 주 월요일에 가능해요!" value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="row" style={{ marginTop: 8 }}>
             <button className="btn primary grow" onClick={() => run(async () => { await requestShare(cid, share.id, fid, { nickname: family?.name || '', note }); setAsk(false); setNote(''); }, '신청했어요')}>보내기</button>
             <button className="btn" onClick={() => setAsk(false)}>취소</button>
