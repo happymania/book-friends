@@ -240,10 +240,10 @@ export default function Settings({ focus, fid, family, pace, kids, books, active
 
       <div className="glass card contact-card">
         <div className="muted">궁금한 점이나 불편한 점을 보내 주세요.</div>
-        <a className="btn block contactbtn" href={contactHref}>
-          <span className="cl">✉️ 개발자에게 문의하기</span>
+        <div className="contact-row">
+          <a className="btn contactbtn" href={contactHref}>✉️ 개발자에게 문의하기</a>
           <span className="ce">{CONTACT_EMAIL}</span>
-        </a>
+        </div>
       </div>
       <div className="pad-bottom" />
     </>
