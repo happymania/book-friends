@@ -253,3 +253,8 @@ body { word-break: keep-all; overflow-wrap: anywhere; }
 .steps li .eg { margin-top: 4px; padding: 6px 10px; border-radius: 10px; background: rgba(255, 240, 179, .7); color: var(--orange-d); font-size: .95rem; }
 ul.plain.sharenotes { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .04); line-height: 1.7; font-size: .95rem; }
 ul.plain.sharenotes li { list-style: none; margin: 0; }
+
+.chip .dot, .tab .dot { margin-left: 6px; }
+.edited { margin-left: 8px; font-size: .85rem; color: var(--orange-d); }
+.seen { margin-left: 6px; font-size: .85rem; color: #8a7a4a; }
+.seen.on { color: #2f8f55; }

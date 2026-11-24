@@ -1,20 +1,23 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import {
   createClass, joinClass, leaveClass, setClassShare, setClassChatUrl, cleanChatUrl, addShare, setShareStatus, deleteShare,
-  requestShare, cancelRequest, replyRequest, updateRequestNote,
+  requestShare, cancelRequest, replyRequest, updateRequestNote, markPosterSeen, markReplySeen,
 } from './db';
+import { ms, noteTime, reqUnread, replyUnread, noteEdited } from './useShareNews';
 import { aggregateClass, statPayload, MIN_KIDS } from './logic';
 import { ShareSteps } from './Help.jsx';
 import { CHAT_ENABLED } from './util';
 
+const fmt = (t) => { const d = t?.toDate ? t.toDate() : null; return d ? `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : ''; };
+
 const KIND = { offer: { label: '나눔', icon: '🎁', btn: '받고 싶어요' }, want: { label: '구해요', icon: '🙋', btn: '빌려줄 수 있어요' } };
 
-export default function ClassTab({ user, fid, family, kids, books, records, shares, classReady, say }) {
+export default function ClassTab({ user, fid, family, kids, books, records, shares, classReady, say, focus, news }) {
   const cid = family?.classId;
   if (!cid) return <Start user={user} fid={fid} family={family} say={say} />;
-  return <Joined user={user} fid={fid} family={family} kids={kids} books={books} records={records} shares={shares} classReady={classReady} say={say} cid={cid} />;
+  return <Joined user={user} fid={fid} family={family} kids={kids} books={books} records={records} shares={shares} classReady={classReady} say={say} cid={cid} focus={focus} news={news} />;
 }
 
 /* ---------- 반 만들기 / 참여 ---------- */
@@ -65,11 +68,12 @@ function Start({ user, fid, family, say }) {
 }
 
 /* ---------- 참여 중 ---------- */
-function Joined({ user, fid, family, kids, books, records, shares, classReady, say, cid }) {
+function Joined({ user, fid, family, kids, books, records, shares, classReady, say, cid, focus, news }) {
   const [cls, setCls] = useState(null);
   const [stats, setStats] = useState([]);
   const [err, setErr] = useState('');
-  const [tab, setTab] = useState('summary');
+  const [tab, setTab] = useState(focus === 'board' ? 'board' : 'summary');
+  const newCount = (news?.req || 0) + (news?.reply || 0);
 
   useEffect(() => {
     if (!classReady) return;
@@ -92,7 +96,7 @@ function Joined({ user, fid, family, kids, books, records, shares, classReady, s
         </div>
         <div className="chips" style={{ marginTop: 8 }}>
           {[['summary', '📊 반 현황'], ['board', '🤝 책 나눔'], ['more', '⚙️ 설정']].map(([k, l]) => (
-            <button key={k} className={'chip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}</button>
+            <button key={k} className={'chip' + (tab === k ? ' on' : '')} onClick={() => setTab(k)}>{l}{k === 'board' && newCount > 0 && <b className="dot">{newCount}</b>}</button>
           ))}
         </div>
       </div>
@@ -263,7 +267,7 @@ function ShareForm({ cid, fid, family, books, say, onDone }) {
   );
 }
 
-function ReqRow({ r, cid, sid, say }) {
+function ReqRow({ r, cid, sid, say, isNew }) {
   const [v, setV] = useState('');
   const [open, setOpen] = useState(false);
   const send = async () => {
@@ -272,8 +276,9 @@ function ReqRow({ r, cid, sid, say }) {
   };
   return (
     <div className="it reqrow">
-      <div><b>{r.nickname || '이웃'}</b>{r.note ? `: ${r.note}` : ''}</div>
-      {r.reply && <div className="muted">내 답장: {r.reply}</div>}
+      <div><b>{r.nickname || '이웃'}</b>{r.note ? `: ${r.note}` : ''}
+        {isNew && <b className="dot">NEW</b>}{noteEdited(r) && <span className="edited">✏️ 수정됨 ({fmt(r.noteAt)})</span>}</div>
+      {r.reply && <div className="muted">내 답장: {r.reply} <span className={'seen' + (replyUnread(r) ? '' : ' on')}>{replyUnread(r) ? '⏳ 아직 안 읽음' : '👀 읽음'}</span></div>}
       {open ? (
         <div style={{ marginTop: 6 }}>
           <input className="input" maxLength={100} placeholder="예: 월요일 학교에서 나눔해요~" value={v} onChange={(e) => setV(e.target.value)} />
@@ -287,7 +292,7 @@ function ReqRow({ r, cid, sid, say }) {
   );
 }
 
-function MyReq({ myReq, cid, sid, fid, say, onCancel }) {
+function MyReq({ myReq, cid, sid, fid, say, onCancel, replyNew }) {
   const [v, setV] = useState('');
   const [open, setOpen] = useState(false);
   const send = async () => {
@@ -297,8 +302,8 @@ function MyReq({ myReq, cid, sid, fid, say, onCancel }) {
   return (
     <div style={{ marginTop: 8 }}>
       <div className="ok">✔ 신청했어요. 글쓴이의 답장은 이 화면에 떠요. (앱을 열어 확인해 주세요)</div>
-      {myReq.note && <div className="muted">내 메모: {myReq.note}</div>}
-      {myReq.reply ? <div className="replybox">💬 글쓴이 답장: {myReq.reply}</div> : <div className="muted">아직 답장이 없어요.</div>}
+      {myReq.note && <div className="muted">내 메모: {myReq.note} <span className={'seen' + (reqUnread(myReq) ? '' : ' on')}>{reqUnread(myReq) ? '⏳ 아직 안 읽었어요' : '👀 글쓴이가 읽었어요'}</span></div>}
+      {myReq.reply ? <div className="replybox">💬 글쓴이 답장: {myReq.reply}{replyNew && <b className="dot">NEW</b>}</div> : <div className="muted">아직 답장이 없어요.</div>}
       {open ? (
         <div style={{ marginTop: 6 }}>
           <input className="input" maxLength={100} placeholder="메모 남기기 (100자)" value={v} onChange={(e) => setV(e.target.value)} />
@@ -325,12 +330,42 @@ function ShareItem({ cid, fid, family, share, say }) {
   const [ask, setAsk] = useState(false);
   const [note, setNote] = useState('');
   const done = share.status === 'done';
+  const [newReq, setNewReq] = useState({});
+  const [replyNew, setReplyNew] = useState(false);
+  const marked = useRef(new Set());
 
   useEffect(() => {
     const e = () => {};
     if (mineOwn) return onSnapshot(collection(db, 'classes', cid, 'shares', share.id, 'requests'), (s) => setReqs(s.docs.map((d) => d.data())), e);
     return onSnapshot(doc(db, 'classes', cid, 'shares', share.id, 'requests', fid), (s) => setMyReq(s.exists() ? s.data() : null), e);
   }, [cid, share.id, fid, mineOwn]);
+
+  // 새 신청: 화면에 보이고 3초 뒤 '읽음'으로 기록 (이 화면을 벗어나기 전까지 NEW는 유지)
+  useEffect(() => {
+    if (!mineOwn) return undefined;
+    const un = reqs.filter(reqUnread);
+    if (!un.length) return undefined;
+    setNewReq((f) => { const n = { ...f }; un.forEach((r) => { n[r.familyId] = true; }); return n; });
+    const t = setTimeout(() => un.forEach((r) => {
+      const k = r.familyId + ':' + noteTime(r);
+      if (marked.current.has(k)) return;
+      marked.current.add(k);
+      markPosterSeen(cid, share.id, r.familyId).catch(() => marked.current.delete(k));
+    }), 3000);
+    return () => clearTimeout(t);
+  }, [reqs, mineOwn, cid, share.id]);
+  // 새 답장: 신청자가 화면에서 보고 3초 뒤 '읽음'으로 기록
+  useEffect(() => {
+    if (mineOwn || !myReq || !replyUnread(myReq)) return undefined;
+    setReplyNew(true);
+    const k = 'reply:' + ms(myReq.replyAt) + ':' + myReq.reply;
+    const t = setTimeout(() => {
+      if (marked.current.has(k)) return;
+      marked.current.add(k);
+      markReplySeen(cid, share.id, fid).catch(() => marked.current.delete(k));
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [myReq, mineOwn, cid, share.id, fid]);
 
   const run = async (fn, ok) => { try { await fn(); if (ok) say(ok); } catch (e) { say('실패: ' + (e.message || e.code)); } };
 
@@ -346,7 +381,7 @@ function ShareItem({ cid, fid, family, share, say }) {
           {reqs.length > 0 && (
             <div className="reqs">
               <div className="label-row">신청 {reqs.length}건 · 답장 메모를 남기고, 책은 학교에서 어린이끼리 주고 받아요</div>
-              {reqs.map((r) => <ReqRow key={r.familyId} r={r} cid={cid} sid={share.id} say={say} />)}
+              {reqs.map((r) => <ReqRow key={r.familyId} r={r} cid={cid} sid={share.id} say={say} isNew={!!newReq[r.familyId]} />)}
             </div>
           )}
           <div className="row" style={{ marginTop: 8 }}>
@@ -355,7 +390,7 @@ function ShareItem({ cid, fid, family, share, say }) {
           </div>
         </>
       ) : done ? null : myReq ? (
-        <MyReq myReq={myReq} cid={cid} sid={share.id} fid={fid} say={say} onCancel={() => run(() => cancelRequest(cid, share.id, fid), '신청을 취소했어요')} />
+        <MyReq myReq={myReq} cid={cid} sid={share.id} fid={fid} say={say} replyNew={replyNew} onCancel={() => run(() => cancelRequest(cid, share.id, fid), '신청을 취소했어요')} />
       ) : ask ? (
         <div style={{ marginTop: 8 }}>
           <div className="muted" style={{ marginBottom: 6 }}>📌 책은 학교에서 만나서 주고 받아요. 언제 어디서 만날지 적어 주세요.</div>

@@ -130,6 +130,7 @@ service cloud.firestore {
 
         // 나눔 신청: 글쓴이 가족과 신청한 가족만 열람
         match /requests/{rid} {
+          function chg() { return request.resource.data.diff(resource.data).affectedKeys(); }
           allow read: if isMember(rid) || isMember(shareOwnerFamily(cid, sid));
           allow create: if isParentAccount() && isClassMember(cid)
             && request.resource.data.familyId == rid && isMember(rid)
@@ -137,17 +138,19 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/classes/$(cid)/shares/$(sid)).data.status == 'open'
             && request.resource.data.nickname is string && request.resource.data.nickname.size() <= 30
             && request.resource.data.note is string && request.resource.data.note.size() <= 100
-            && request.resource.data.keys().hasOnly(['familyId', 'nickname', 'note', 'createdAt']);
-          // 메모 주고받기: 글쓴이는 reply만, 신청자는 자기 메모(note)만 고칠 수 있음
+            && request.resource.data.noteAt == request.time
+            && request.resource.data.keys().hasOnly(['familyId', 'nickname', 'note', 'noteAt', 'createdAt']);
+          // 메모 주고받기: 글쓴이는 답장(reply)과 읽음 표시만, 신청자는 자기 메모(note)와 읽음 표시만 고칠 수 있음
           allow update: if (isMember(shareOwnerFamily(cid, sid))
-                && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reply'])
-                && request.resource.data.reply is string && request.resource.data.reply.size() <= 100)
+                && chg().hasOnly(['reply', 'replyAt', 'posterSeenAt'])
+                && request.resource.data.get('reply', '') is string && request.resource.data.get('reply', '').size() <= 100
+                && (!chg().hasAny(['replyAt']) || request.resource.data.replyAt == request.time)
+                && (!chg().hasAny(['posterSeenAt']) || request.resource.data.posterSeenAt == request.time))
             || (isMember(rid)
-                && request.resource.data.familyId == rid
-                && request.resource.data.get('reply', '') == resource.data.get('reply', '')
-                && request.resource.data.nickname is string && request.resource.data.nickname.size() <= 30
+                && chg().hasOnly(['note', 'noteAt', 'replySeenAt'])
                 && request.resource.data.note is string && request.resource.data.note.size() <= 100
-                && request.resource.data.keys().hasOnly(['familyId', 'nickname', 'note', 'reply', 'createdAt']));
+                && (!chg().hasAny(['noteAt']) || request.resource.data.noteAt == request.time)
+                && (!chg().hasAny(['replySeenAt']) || request.resource.data.replySeenAt == request.time));
           allow delete: if isMember(rid) || isMember(shareOwnerFamily(cid, sid));
         }
       }

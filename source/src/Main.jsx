@@ -9,6 +9,7 @@ import BookList from './BookList.jsx';
 import Stats from './Stats.jsx';
 import Settings from './Settings.jsx';
 import ClassTab from './Class.jsx';
+import { useShareNews } from './useShareNews';
 import NoticeBar from './Notices.jsx';
 
 const ls = {
@@ -118,6 +119,8 @@ export default function Main({ user, profile, kidMode }) {
     return () => clearTimeout(t);
   }, [cid, fid, activeKid, recKid, books, records, family?.classShare, classReady, kidMode]);
 
+  const news = useShareNews(cid, fid, shares, !kidMode && mode === 'parent' && classReady && !!cid);
+  const newTotal = news.req + news.reply;
   const pace = useMemo(() => computePace({ books, records, family, today: today() }), [books, records, family]);
 
   // 우리 반에서 나눔 중인 책(아직 없는 책에만 표시)
@@ -229,7 +232,7 @@ export default function Main({ user, profile, kidMode }) {
       </div>
 
       <div className="tabs" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0,1fr))` }}>
-        {tabs.map((t) => <button key={t} className={'tab' + (tab === t ? ' on' : '')} onClick={() => { setFocus(null); setTab(t); }}>{tabLabel[t]}</button>)}
+        {tabs.map((t) => <button key={t} className={'tab' + (tab === t ? ' on' : '')} onClick={() => { setFocus(null); setTab(t); }}>{tabLabel[t]}{t === 'class' && newTotal > 0 && <b className="dot">{newTotal}</b>}</button>)}
       </div>
 
       {!kid && !kidMode ? (
@@ -237,12 +240,18 @@ export default function Main({ user, profile, kidMode }) {
       ) : tab === 'books' ? (
         <>
         {isParent && <NoticeBar />}
+        {isParent && newTotal > 0 && (
+          <button className="noticebar new" onClick={() => { setFocus('board'); setTab('class'); }}>
+            <span>📬 새 소식이 왔어요{news.req > 0 && ` · 새 신청 ${news.req}건`}{news.reply > 0 && ` · 새 답장 ${news.reply}건`}</span>
+            <b className="dot">보러 가기</b>
+          </button>
+        )}
         <BookList books={books} records={records} isParent={isParent} onLib={onLib} onRead={onRead} onReview={onReview} onGoal={onGoal} pace={pace} family={family} shareHints={shareHints} goToSettings={isParent ? () => { setFocus('goal'); setTab('settings'); } : null} goToClass={isParent ? () => setTab('class') : null} />
         </>
       ) : tab === 'stats' ? (
         <Stats books={books} records={records} kid={kid} isParent={isParent} family={family} />
       ) : tab === 'class' ? (
-        <ClassTab user={user} fid={fid} family={family} kids={kids} books={books} records={records} shares={shares} classReady={classReady} say={say} />
+        <ClassTab user={user} fid={fid} family={family} kids={kids} books={books} records={records} shares={shares} classReady={classReady} say={say} focus={focus} news={news} />
       ) : (
         <Settings records={records} focus={focus} fid={fid} family={family} pace={pace} kids={kids} books={books} activeKid={activeKid} user={user} say={say} />
       )}
