@@ -37,7 +37,7 @@ export default function Stats({ books, records, kid, isParent, family }) {
     <>
       <div className="glass card">
         <h2>{kid?.emoji} {kid?.name}의 독서 현황</h2>
-        <Prog label="전체" d={dn(books)} t={books.length} color="linear-gradient(90deg,#ffb26b,#ff7a3d)" />
+        <Prog label="전체" d={dn(books)} t={books.length} color="linear-gradient(90deg,#ffd23f,#f2a900)" />
         <Prog label="선정도서" d={dn(sel)} t={sel.length} color="linear-gradient(90deg,#ff9b9b,#e05a5a)" />
         <Prog label="권장도서" d={dn(rec)} t={rec.length} color="linear-gradient(90deg,#8bbcff,#4b86e0)" />
       </div>

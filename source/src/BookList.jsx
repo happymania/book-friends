@@ -32,7 +32,7 @@ function PaceCard({ pace, goToSettings }) {
   return (
     <div className={'glass card pace lv-' + pace.level}>
       <div className="stat-row"><b>🎯 {pace.targetLabel} 목표</b><span>{pace.done} / {pace.total}권 ({pct}%)</span></div>
-      <div className="bar"><i style={{ width: pct + '%', background: 'linear-gradient(90deg,#ffb26b,#ff7a3d)' }} /></div>
+      <div className="bar"><i style={{ width: pct + '%', background: 'linear-gradient(90deg,#ffd23f,#f2a900)' }} /></div>
       <div className="pace-msg">{icon} {msg}</div>
       {pace.level !== 'complete' && pace.level !== 'over' && pace.level !== 'none' && (
         <div className="muted">마감까지 {pace.days}일 · 남은 책 {pace.remaining}권 → <b>일주일에 {pace.perWeek}권</b> (이번 주 {pace.thisWeek}권 완독)</div>
