@@ -164,3 +164,5 @@ ul.plain { margin: 8px 0 0; padding-left: 1.2em; line-height: 1.7; }
 .share .reqs { margin-top: 8px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,.6); }
 .share .reqs .it { padding: 4px 0; }
 .sharetag { display: block; width: 100%; min-height: 44px; margin-top: 8px; border-radius: 12px; border: 1px dashed var(--purple); background: rgba(138,92,214,.1); color: #5b3aa6; font-size: .95rem; text-align: left; padding: 6px 12px; }
+
+.chatlink { display: flex; align-items: center; justify-content: center; margin-top: 8px; text-decoration: none; color: #3b2a00; background: #fee500; border-color: transparent; text-align: center; }

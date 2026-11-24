@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import {
-  createClass, joinClass, leaveClass, setClassShare, addShare, setShareStatus, deleteShare,
+  createClass, joinClass, leaveClass, setClassShare, setClassChatUrl, cleanChatUrl, addShare, setShareStatus, deleteShare,
   requestShare, cancelRequest,
 } from './db';
 import { aggregateClass, statPayload, MIN_KIDS } from './logic';
@@ -19,6 +19,7 @@ export default function ClassTab({ user, fid, family, kids, books, records, shar
 function Start({ user, fid, family, say }) {
   const [name, setName] = useState(`${family?.school || ''} ${family?.className || ''}`.trim());
   const [code, setCode] = useState('');
+  const [chat, setChat] = useState('');
   const [busy, setBusy] = useState(false);
   const run = async (fn, ok) => {
     setBusy(true);
@@ -46,8 +47,11 @@ function Start({ user, fid, family, say }) {
         <h2>새 반 만들기</h2>
         <label className="f">반 이름</label>
         <input className="input" placeholder="예: 리라초 4학년 3반" value={name} onChange={(e) => setName(e.target.value)} />
+        <label className="f">학급 단톡방 링크 (선택)</label>
+        <input className="input" placeholder="https://open.kakao.com/..." value={chat} onChange={(e) => setChat(e.target.value)} />
+        <p className="muted">나눔 연락은 이 단톡방에서 해요. 나중에 설정에서 바꿀 수 있어요.</p>
         <button className="btn block" style={{ marginTop: 8 }} disabled={busy || !name.trim()}
-          onClick={() => run(() => createClass(user, fid, { name: name.trim(), school: family?.school, className: family?.className }), '반을 만들었어요')}>반 만들고 코드 받기</button>
+          onClick={() => run(() => createClass(user, fid, { name: name.trim(), school: family?.school, className: family?.className, chatUrl: cleanChatUrl(chat) }), '반을 만들었어요')}>반 만들고 코드 받기</button>
         <p className="muted">만든 뒤 나오는 코드를 같은 반 학부모에게 알려 주세요.</p>
       </div>
     </>
@@ -88,7 +92,7 @@ function Joined({ user, fid, family, kids, books, records, shares, classReady, s
       </div>
 
       {tab === 'summary' && <Summary agg={agg} books={books} records={records} family={family} />}
-      {tab === 'board' && <Board cid={cid} fid={fid} family={family} books={books} shares={shares} say={say} />}
+      {tab === 'board' && <Board cid={cid} fid={fid} family={family} books={books} shares={shares} say={say} chatUrl={cls?.chatUrl} />}
       {tab === 'more' && (
         <>
           <div className="glass card">
@@ -96,6 +100,7 @@ function Joined({ user, fid, family, kids, books, records, shares, classReady, s
             <div className="code-box">{cls?.code || family?.classCode}</div>
             <p className="muted">같은 반 학부모에게 알려 주세요. 이 코드를 아는 보호자만 참여할 수 있어요.</p>
           </div>
+          <ChatLink cls={cls} cid={cid} isOwner={cls?.ownerUid === user.uid} say={say} />
           <div className="glass card">
             <h2>내 기록 공유</h2>
             <label className="switch">
@@ -109,6 +114,25 @@ function Joined({ user, fid, family, kids, books, records, shares, classReady, s
       )}
       <div className="pad-bottom" />
     </>
+  );
+}
+
+function ChatLink({ cls, cid, isOwner, say }) {
+  const [v, setV] = useState(cls?.chatUrl || '');
+  useEffect(() => { setV(cls?.chatUrl || ''); }, [cls?.chatUrl]);
+  return (
+    <div className="glass card">
+      <h2>💬 학급 단톡방</h2>
+      {isOwner ? (
+        <>
+          <input className="input" placeholder="https://open.kakao.com/..." value={v} onChange={(e) => setV(e.target.value)} />
+          <button className="btn primary block" style={{ marginTop: 8 }}
+            onClick={() => setClassChatUrl(cid, v).then(() => say('저장했어요')).catch((e) => say(e.message || '실패'))}>저장</button>
+          <p className="muted">비우면 링크가 사라져요. 반을 만든 사람만 바꿀 수 있어요.</p>
+        </>
+      ) : cls?.chatUrl ? <p className="muted">등록된 단톡방이 있어요. 책 나눔 탭에서 열 수 있어요.</p>
+        : <p className="muted">아직 등록된 단톡방이 없어요. 반을 만든 분께 링크 등록을 부탁해 보세요.</p>}
+    </div>
   );
 }
 
@@ -166,7 +190,7 @@ function Summary({ agg, books, records, family }) {
 }
 
 /* ---------- 책 나눔 게시판 ---------- */
-function Board({ cid, fid, family, books, shares, say }) {
+function Board({ cid, fid, family, books, shares, say, chatUrl }) {
   const [filter, setFilter] = useState('offer');
   const [adding, setAdding] = useState(false);
   const list = shares
@@ -181,6 +205,9 @@ function Board({ cid, fid, family, books, shares, say }) {
           ))}
         </div>
         <button className="btn primary block" style={{ marginTop: 8 }} onClick={() => setAdding(!adding)}>{adding ? '닫기' : '✏️ 글 올리기'}</button>
+        {chatUrl && /^https:\/\//.test(chatUrl) && (
+          <a className="btn block chatlink" href={chatUrl} target="_blank" rel="noopener noreferrer">💬 학급 단톡방 열기 (연락은 여기서)</a>
+        )}
         <p className="muted">연락처는 앱 밖(학급 단톡방 등)에서 주고받아요. 전화번호·주소는 적지 마세요. 거래·판매는 하지 않고 나눔과 빌려주기만 해요.</p>
       </div>
       {adding && <ShareForm cid={cid} fid={fid} family={family} books={books} say={say} onDone={() => setAdding(false)} />}
@@ -247,7 +274,7 @@ function ShareItem({ cid, fid, family, share, say }) {
         <>
           {reqs.length > 0 && (
             <div className="reqs">
-              <div className="label-row">신청 {reqs.length}건 · 학급 단톡방 등에서 연락해 주세요</div>
+              <div className="label-row">신청 {reqs.length}건 · 단톡방에서 이름을 말하고 연락해 주세요</div>
               {reqs.map((r) => <div className="it" key={r.familyId}><b>{r.nickname || '이웃'}</b>{r.note ? ` · ${r.note}` : ''}</div>)}
             </div>
           )}
@@ -263,7 +290,7 @@ function ShareItem({ cid, fid, family, share, say }) {
         </div>
       ) : ask ? (
         <div style={{ marginTop: 8 }}>
-          <input className="input" maxLength={100} placeholder="한마디 (선택) 예: 주말에 받을 수 있어요" value={note} onChange={(e) => setNote(e.target.value)} />
+          <input className="input" maxLength={100} placeholder="예: 민준이 엄마예요, 주말에 가능해요" value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="row" style={{ marginTop: 8 }}>
             <button className="btn primary grow" onClick={() => run(async () => { await requestShare(cid, share.id, fid, { nickname: family?.name || '', note }); setAsk(false); setNote(''); }, '신청했어요')}>보내기</button>
             <button className="btn" onClick={() => setAsk(false)}>취소</button>

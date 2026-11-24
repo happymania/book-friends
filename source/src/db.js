@@ -194,10 +194,10 @@ const cdoc = (cid, ...p) => doc(db, 'classes', cid, ...p);
 const ccol = (cid, ...p) => collection(db, 'classes', cid, ...p);
 
 // 반 만들기: 내 가족을 첫 구성원으로 등록하고 참여 코드를 발급
-export async function createClass(user, fid, { name, school, className }) {
+export async function createClass(user, fid, { name, school, className, chatUrl }) {
   const cid = doc(collection(db, 'classes')).id;
   const code = genCode(6);
-  await setDoc(cdoc(cid), { name, school: school || '', className: className || '', code, ownerUid: user.uid, createdAt: serverTimestamp() });
+  await setDoc(cdoc(cid), { name, school: school || '', className: className || '', code, ownerUid: user.uid, chatUrl: chatUrl || '', createdAt: serverTimestamp() });
   await setDoc(cdoc(cid, 'members', user.uid), { familyId: fid, code, createdAt: serverTimestamp() });
   await setDoc(doc(db, 'classCodes', code), { classId: cid });
   await updateDoc(fdoc(fid), { classId: cid, classCode: code, classShare: true });
@@ -239,6 +239,17 @@ export async function leaveClass(user, fid, cid, kids) {
   await Promise.all(others.map((d) => deleteDoc(d.ref)));
   await deleteDoc(cdoc(cid, 'members', user.uid));
   await updateDoc(fdoc(fid), { classId: deleteField(), classCode: deleteField(), classShare: deleteField() });
+}
+
+// 학급 단톡방(오픈채팅 등) 링크: https 주소만 허용, 반을 만든 사람만 수정
+export function cleanChatUrl(raw) {
+  const u = (raw || '').trim();
+  if (!u) return '';
+  if (!/^https:\/\/[^\s]{4,300}$/.test(u)) throw new Error('https:// 로 시작하는 링크를 입력해 주세요.');
+  return u;
+}
+export function setClassChatUrl(cid, raw) {
+  return updateDoc(cdoc(cid), { chatUrl: cleanChatUrl(raw) });
 }
 
 export function setClassShare(fid, on) {
