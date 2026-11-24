@@ -4,6 +4,15 @@ const SEEN_KEY = 'bf_notice_seen';
 const getSeen = () => { try { return Number(localStorage.getItem(SEEN_KEY)) || 0; } catch { return 0; } };
 const setSeen = (n) => { try { localStorage.setItem(SEEN_KEY, String(n)); } catch { /* 무시 */ } };
 
+// lines 항목: 문자열(문단) | {h:"소제목"} | {step:1,text:"..."} | {img:"notices/a.png",alt:"설명"}
+function Line({ l }) {
+  if (typeof l === 'string') return <p>{l}</p>;
+  if (l.h) return <h3 className="nh">{l.h}</h3>;
+  if (l.step) return <div className="nstep"><b>{l.step}</b><span>{l.text}</span></div>;
+  if (l.img) return <img className="nimg" src={new URL(l.img, location.href).href} alt={l.alt || ''} loading="lazy" />;
+  return null;
+}
+
 // 공지는 notices.json 파일에서 읽어요. 파일만 바꿔 올리면 앱 업데이트 없이 반영돼요.
 export default function NoticeBar() {
   const [list, setList] = useState([]);
@@ -37,7 +46,7 @@ export default function NoticeBar() {
               <div className="notice" key={n.id}>
                 <div className="nt">{n.title}{n.id > seen && <b className="dot">NEW</b>}</div>
                 <div className="muted">{n.date}</div>
-                {(n.lines || []).map((l, i) => <p key={i}>{l}</p>)}
+                {(n.lines || []).map((l, i) => <Line key={i} l={l} />)}
               </div>
             ))}
             <button className="btn primary block" onClick={close}>확인했어요</button>
