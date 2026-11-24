@@ -12,7 +12,7 @@ html[data-fs='xl'] { font-size: 22px; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; overflow-x: hidden; }
 body {
-  font-family: 'Gowun Dodum', sans-serif; color: var(--ink);
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif; color: var(--ink);
   font-size: 1.15rem; line-height: 1.55; letter-spacing: .01em;
   min-height: 100vh; background: linear-gradient(160deg, #d9efff 0%, #fff9e0 52%, #ffe9a3 100%);
   background-attachment: fixed;
@@ -198,3 +198,7 @@ h2 { border-left: 6px solid var(--orange); padding-left: 10px; }
 .pace { border-left: 7px solid var(--orange); }
 .bdg.on { background: #fff0b3; }
 .sum .n { color: #231f14; }
+
+/* 글꼴(Pretendard)은 굵기가 다양해서 제목·강조에 굵기를 사용 */
+h1, h2, h3, .title, .bk .t, .sum .n, .stat-row b { font-weight: 700; }
+body { word-break: keep-all; overflow-wrap: anywhere; }

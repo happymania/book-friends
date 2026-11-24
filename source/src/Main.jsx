@@ -46,7 +46,7 @@ export default function Main({ user, profile, kidMode }) {
       if (e.code === 'permission-denied') setGone(true); else onErr(e);
     };
     const offs = [
-      onSnapshot(doc(db, 'families', fid), (s) => { if (!s.exists() && !globalThis.__bfDeleting) setGone(true); setFamily(s.exists() ? { id: s.id, ...s.data() } : null); }, onFamErr),
+      onSnapshot(doc(db, 'families', fid), (s) => { if (!s.exists() && !s.metadata.fromCache && !globalThis.__bfDeleting) setGone(true); setFamily(s.exists() ? { id: s.id, ...s.data() } : null); }, onFamErr),
       onSnapshot(collection(db, 'families', fid, 'books'), (s) => {
         setBooks(s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
       }, onErr),

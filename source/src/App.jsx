@@ -146,7 +146,7 @@ export default function App() {
   const [user, setUser] = useState(undefined);
   const [profile, setProfile] = useState(undefined);
 
-  useEffect(() => onAuthStateChanged(auth, (u) => { setUser(u); if (!u) setProfile(undefined); }), []);
+  useEffect(() => onAuthStateChanged(auth, (u) => { setUser(u); if (!u) { setProfile(undefined); globalThis.__bfDeleting = false; } }), []);
   useEffect(() => {
     if (!user) return;
     setProfile(undefined);

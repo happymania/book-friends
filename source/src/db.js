@@ -230,6 +230,8 @@ export async function ensureClassMember(user, fid, cid, code) {
 
 // 반 나가기: 우리 가족의 통계·구성원 정보 삭제 후 가족 문서에서 학급 연결 해제
 export async function leaveClass(user, fid, cid, kids) {
+  // 먼저 가족의 학급 연결을 끊어서, 앱이 집계 숫자를 다시 올리지 않게 함
+  await updateDoc(fdoc(fid), { classId: deleteField(), classCode: deleteField(), classShare: deleteField() });
   await Promise.all(kids.map((k) => deleteDoc(cdoc(cid, 'stats', k.id)).catch(() => {})));
   // 우리 가족 나눔 글과 신청 정리
   const shares = await getDocs(query(ccol(cid, 'shares'), where('familyId', '==', fid)));
@@ -238,7 +240,6 @@ export async function leaveClass(user, fid, cid, kids) {
   const others = mine.docs.filter((d) => d.id !== user.uid);
   await Promise.all(others.map((d) => deleteDoc(d.ref)));
   await deleteDoc(cdoc(cid, 'members', user.uid));
-  await updateDoc(fdoc(fid), { classId: deleteField(), classCode: deleteField(), classShare: deleteField() });
 }
 
 // 학급 단톡방(오픈채팅 등) 링크: https 주소만 허용, 반을 만든 사람만 수정
