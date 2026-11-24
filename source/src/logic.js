@@ -16,16 +16,41 @@ const addDays = (s, n) => { const t = new Date(utc(s)); t.setUTCDate(t.getUTCDat
 
 const isDone = (records, id) => records[id]?.read === 'done';
 
+/* ---------- 읽기 목표 범위 ---------- */
+// goalTarget: 'all' | 'selected' | 'recommended' | 'cat:문학' 등
+export function targetBooks(books, gt) {
+  if (gt === 'selected') return books.filter((b) => b.type === '선정');
+  if (gt === 'recommended') return books.filter((b) => b.type === '권장');
+  if (typeof gt === 'string' && gt.startsWith('cat:')) return books.filter((b) => b.cat === gt.slice(4));
+  return books;
+}
+export function targetLabel(gt) {
+  if (gt === 'selected') return '선정도서';
+  if (gt === 'recommended') return '권장도서';
+  if (typeof gt === 'string' && gt.startsWith('cat:')) return gt.slice(4) + ' 분류';
+  return '전체 도서';
+}
+export function goalOptions(books) {
+  const opts = [{ value: 'all', label: `전체 도서 (${books.length}권)` }];
+  const sel = targetBooks(books, 'selected').length, rec = targetBooks(books, 'recommended').length;
+  if (sel) opts.push({ value: 'selected', label: `선정도서 (${sel}권)` });
+  if (rec) opts.push({ value: 'recommended', label: `권장도서 (${rec}권)` });
+  [...new Set(books.map((b) => b.cat).filter(Boolean))].forEach((c) => {
+    opts.push({ value: 'cat:' + c, label: `${c} 분류 (${targetBooks(books, 'cat:' + c).length}권)` });
+  });
+  return opts;
+}
+
 /* ---------- 읽기 페이스 ---------- */
 export function computePace({ books, records, family, today }) {
-  const target = family?.goalTarget === 'selected' ? books.filter((b) => b.type === '선정') : books;
+  const target = targetBooks(books, family?.goalTarget);
   const total = target.length;
   const doneBooks = target.filter((b) => isDone(records, b.id));
   const done = doneBooks.length;
   const remaining = total - done;
   const ws = weekStart(today);
   const thisWeek = doneBooks.filter((b) => (records[b.id]?.done_date || '') >= ws).length;
-  const base = { total, done, remaining, thisWeek, targetLabel: family?.goalTarget === 'selected' ? '선정도서' : '전체 도서' };
+  const base = { total, done, remaining, thisWeek, targetLabel: targetLabel(family?.goalTarget) };
   if (!family?.deadline) return { ...base, hasGoal: false };
   const days = daysBetween(today, family.deadline);
   if (total === 0) return { ...base, hasGoal: true, days, level: 'none', perWeek: 0 };

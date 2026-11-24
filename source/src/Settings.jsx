@@ -9,6 +9,7 @@ import {
 } from './db';
 import { CATS, KID_EMOJIS, parseCsv, downloadCsv, contactHref, CONTACT_EMAIL } from './util';
 import { HelpGuide } from './Help.jsx';
+import { goalOptions } from './logic';
 
 function Section({ id, title, children, open: o = false }) {
   const [open, setOpen] = useState(o);
@@ -125,7 +126,7 @@ export default function Settings({ focus, fid, family, pace, kids, books, active
         <p className="muted">마감일과 목표 범위를 정하면 책 탭에 「일주일에 몇 권」이 표시돼요. 가족 모두에게 같은 목표가 적용돼요.</p>
         <label className="f">목표 범위</label>
         <select className="input" value={goal.goalTarget} onChange={(e) => setGoal({ ...goal, goalTarget: e.target.value })}>
-          <option value="all">전체 도서</option><option value="selected">선정도서만</option>
+          {goalOptions(books).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         <label className="f">마감일</label>
         <input className="input" type="date" value={goal.deadline} onChange={(e) => setGoal({ ...goal, deadline: e.target.value })} />

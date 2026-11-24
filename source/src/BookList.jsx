@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { LIB, READ } from './util';
+import { goalOptions } from './logic';
 
 function hl(text, q) {
   if (!q) return text;
@@ -51,14 +52,13 @@ const PACE_MSG = {
 };
 
 function GoalForm({ family, books, onGoal, onClose }) {
-  const selN = books.filter((b) => b.type === '선정').length;
   const [deadline, setDeadline] = useState(family?.deadline || '');
   const [target, setTarget] = useState(family?.goalTarget || 'all');
   return (
     <div className="goalform">
       <label className="f">목표 범위</label>
       <select className="input" value={target} onChange={(e) => setTarget(e.target.value)}>
-        <option value="all">{`전체 도서 (${books.length}권)`}</option><option value="selected">{`선정도서만 (${selN}권)`}</option>
+        {goalOptions(books).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
       <label className="f">마감일</label>
       <input className="input" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
