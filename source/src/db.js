@@ -209,7 +209,8 @@ const cdoc = (cid, ...p) => doc(db, 'classes', cid, ...p);
 const ccol = (cid, ...p) => collection(db, 'classes', cid, ...p);
 
 // 반 이름 비교용: 학교 글자(띄어쓰기·기호 무시) + 학년 숫자 + 반 숫자
-export const nameKey = (s) => (s || '').toLowerCase().replace(/[\s\-_.·,/]/g, '').slice(0, 40);
+// 띄어쓰기·기호를 무시하고, 끝의 「초등학교」「초교」「초」를 빼서 「리라초」「리라초등학교」를 같게 본다
+export const nameKey = (s) => (s || '').toLowerCase().replace(/[\s\-_.·,/]/g, '').replace(/(초등학교|초교|초)$/, '').slice(0, 40);
 export const classKey = (school, grade, num) => `${nameKey(school)}-${Number(grade)}-${Number(num)}`;
 export const classTitle = (school, grade, num) => `${(school || '').trim()} ${Number(grade)}학년 ${Number(num)}반`.trim();
 const ddoc = (key) => doc(db, 'classDirectory', key);
@@ -238,15 +239,22 @@ export async function findClass(school, grade, num) {
 }
 
 // 방장: 같은 반 학부모의 참여 받기 켜기/끄기 (옛날에 만든 반은 학년·반 숫자를 한 번 등록)
+const parseClassName = (cn) => { const m = /(\d+)\s*학년\s*(\d+)\s*반/.exec(cn || ''); return m ? { grade: m[1], num: m[2] } : null; };
 export async function setNameOpen(cid, cls, open, parts) {
-  let key = cls?.key;
+  const oldKey = cls?.key || '';
+  if (!oldKey && !parts) throw new Error('학년과 반을 입력해 주세요.');
+  const p = parts || parseClassName(cls?.className);
+  const key = p ? classKey(cls.school, p.grade, p.num) : oldKey;
   const extra = {};
-  if (!key) {
-    if (!parts) throw new Error('학년과 반을 입력해 주세요.');
-    key = classKey(cls.school, parts.grade, parts.num);
-    extra.key = key;
-    extra.name = classTitle(cls.school, parts.grade, parts.num);
-    extra.className = `${Number(parts.grade)}학년 ${Number(parts.num)}반`;
+  if (!oldKey) {
+    extra.name = classTitle(cls.school, p.grade, p.num);
+    extra.className = `${Number(p.grade)}학년 ${Number(p.num)}반`;
+  }
+  if (key !== oldKey) extra.key = key;
+  // 이름표 규칙이 바뀐 옛 등록은 지우고 새 이름표로 다시 등록
+  if (oldKey && oldKey !== key) {
+    const prev = await getDoc(ddoc(oldKey));
+    if (prev.exists() && prev.data().classId === cid) await deleteDoc(ddoc(oldKey));
   }
   const ref = ddoc(key);
   const cur = await getDoc(ref);

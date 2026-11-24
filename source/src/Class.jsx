@@ -53,7 +53,7 @@ function Start({ user, fid, family, say }) {
       </div>
       <div className="glass card">
         <h2>우리 반 입력</h2>
-        <p className="muted" style={{ marginTop: 0 }}>학교 이름은 같은 반 학부모와 똑같이 정확하게 적어 주세요. 학년과 반은 숫자만 적으면 같은 반과 자동으로 연결돼요.</p>
+        <p className="muted" style={{ marginTop: 0 }}>학교 이름은 「리라초」「리라초등학교」처럼 써도 같은 학교로 봐요. 학년과 반은 숫자만 적으면 같은 반과 자동으로 연결돼요.</p>
         <div className="classrow">
           <div className="school-box"><label className="f">학교 *</label>
             <input className="input" placeholder="예: 리라초등학교" maxLength={20} value={schoolIn}
