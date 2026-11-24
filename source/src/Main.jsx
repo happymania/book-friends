@@ -188,7 +188,7 @@ export default function Main({ user, profile, kidMode }) {
       <div className="glass top">
         <div className="row">
           <div className="grow">
-            <div className="title">📚 {family?.name || '책은 내 친구'}</div>
+            <div className="title">{!isParent && kid ? `${kid.emoji} ${kid.name}` : `📚 ${family?.name || '책은 내 친구'}`}</div>
             <div className="muted">{family?.school} {family?.className}</div>
           </div>
           <span className="modebadge">{kidMode ? '어린이 기기' : isParent ? '부모 모드' : '어린이 모드'}</span>
@@ -216,7 +216,7 @@ export default function Main({ user, profile, kidMode }) {
             ))}
           </div>
         )}
-        {kidMode && kid && <div style={{ marginTop: 6, fontSize: '1.2rem' }}>{kid.emoji} {kid.name}의 독서 기록</div>}
+        {kidMode && kid && <div style={{ marginTop: 6, fontSize: '1.2rem' }}>📖 나의 독서 기록</div>}
       </div>
 
       <div className="tabs" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0,1fr))` }}>
