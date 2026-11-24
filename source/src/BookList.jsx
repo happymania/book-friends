@@ -28,7 +28,7 @@ function ReviewBox({ rec, onSave }) {
       <div className="label-row">별점과 한줄평</div>
       <Stars value={rec?.rating || 0} onPick={(n) => onSave({ rating: n })} />
       <div className="row" style={{ marginTop: 6 }}>
-        <input className="input grow" maxLength={60} placeholder="읽고 어땠는지 한 줄로 남겨 보세요" value={text} onChange={(e) => setText(e.target.value)} />
+        <input className="input grow" maxLength={100} placeholder="읽고 어땠는지 한 줄로 남겨 보세요" value={text} onChange={(e) => setText(e.target.value)} />
         <button className="btn sm primary" disabled={!dirty} onClick={() => onSave({ review: text })}>저장</button>
       </div>
     </div>
