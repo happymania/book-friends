@@ -7,6 +7,7 @@ import {
 } from './db';
 import { aggregateClass, statPayload, MIN_KIDS } from './logic';
 import { ShareSteps } from './Help.jsx';
+import { CHAT_ENABLED } from './util';
 
 const KIND = { offer: { label: '나눔', icon: '🎁', btn: '받고 싶어요' }, want: { label: '구해요', icon: '🙋', btn: '빌려줄 수 있어요' } };
 
@@ -49,11 +50,13 @@ function Start({ user, fid, family, say }) {
         <h2>새 반 만들기</h2>
         <label className="f">반 이름</label>
         <input className="input" placeholder="예: 리라초 4학년 3반" value={name} onChange={(e) => setName(e.target.value)} />
-        <label className="f">학급 단톡방 링크 (선택)</label>
-        <input className="input" placeholder="https://open.kakao.com/..." value={chat} onChange={(e) => setChat(e.target.value)} />
-        <p className="muted">나눔 연락은 이 단톡방에서 해요. 나중에 설정에서 바꿀 수 있어요.</p>
+        {CHAT_ENABLED && (<>
+          <label className="f">학급 단톡방 링크 (선택)</label>
+          <input className="input" placeholder="https://open.kakao.com/..." value={chat} onChange={(e) => setChat(e.target.value)} />
+          <p className="muted">나눔 연락은 이 단톡방에서 해요. 나중에 설정에서 바꿀 수 있어요.</p>
+        </>)}
         <button className="btn block" style={{ marginTop: 8 }} disabled={busy || !name.trim()}
-          onClick={() => run(() => createClass(user, fid, { name: name.trim(), school: family?.school, className: family?.className, chatUrl: cleanChatUrl(chat) }), '반을 만들었어요')}>반 만들고 코드 받기</button>
+          onClick={() => run(() => createClass(user, fid, { name: name.trim(), school: family?.school, className: family?.className, chatUrl: CHAT_ENABLED ? cleanChatUrl(chat) : '' }), '반을 만들었어요')}>반 만들고 코드 받기</button>
         <p className="muted">만든 뒤 나오는 코드를 같은 반 학부모에게 알려 주세요.</p>
       </div>
     </>
@@ -102,7 +105,7 @@ function Joined({ user, fid, family, kids, books, records, shares, classReady, s
             <div className="code-box">{cls?.code || family?.classCode}</div>
             <p className="muted">같은 반 학부모에게 알려 주세요. 이 코드를 아는 보호자만 참여할 수 있어요.</p>
           </div>
-          <ChatLink cls={cls} cid={cid} isOwner={cls?.ownerUid === user.uid} say={say} />
+          {CHAT_ENABLED && <ChatLink cls={cls} cid={cid} isOwner={cls?.ownerUid === user.uid} say={say} />}
           <div className="glass card">
             <h2>내 기록 공유</h2>
             <label className="switch">
@@ -207,7 +210,7 @@ function Board({ cid, fid, family, books, shares, say, chatUrl }) {
           ))}
         </div>
         <button className="btn primary block" style={{ marginTop: 8 }} onClick={() => setAdding(!adding)}>{adding ? '닫기' : '✏️ 글 올리기'}</button>
-        {chatUrl && /^https:\/\//.test(chatUrl) && (
+        {CHAT_ENABLED && chatUrl && /^https:\/\//.test(chatUrl) && (
           <a className="btn block chatlink" href={chatUrl} target="_blank" rel="noopener noreferrer">💬 학급 단톡방 열기 (연락은 여기서)</a>
         )}
         <div className="meetnote">📌 책은 <b>학교에서 만나서 주고 받아요.</b></div>

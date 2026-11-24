@@ -83,3 +83,6 @@ export function getFontSize() { try { const v = localStorage.getItem('bf_fs'); r
 export function applyFontSize(v) { document.documentElement.dataset.fs = v; try { localStorage.setItem('bf_fs', v); } catch { /* 무시 */ } }
 export function nextFontSize() { const n = FS[(FS.indexOf(getFontSize()) + 1) % FS.length]; applyFontSize(n); return n; }
 export const FS_LABEL = { normal: '보통', lg: '크게', xl: '아주 크게' };
+
+// 학급 단톡방 링크 기능: 학교 정책상 비활성화 (true로 바꾸면 다시 켜져요)
+export const CHAT_ENABLED = false;
