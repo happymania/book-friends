@@ -4,12 +4,12 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import {
   addKid, regenConnectCode, renameKid, removeKid, regenInviteCode, setPin, addBook, deleteBook,
-  importBooks, resetToTemplate, importLegacy, updateFamilyInfo,
+  importBooks, resetToTemplate, importLegacy, updateFamilyInfo, setGoal,
   confirmIdentity, deleteFamilyData, leaveFamilyData, deleteAuthAccount,
 } from './db';
 import { CATS, KID_EMOJIS, parseCsv, downloadCsv, contactHref, CONTACT_EMAIL } from './util';
 import { HelpGuide } from './Help.jsx';
-import { goalOptions } from './logic';
+import { GoalForm } from './BookList';
 
 function Section({ id, title, children, open: o = false }) {
   const [open, setOpen] = useState(o);
@@ -71,7 +71,6 @@ export default function Settings({ focus, fid, family, pace, kids, books, active
     }
   }
   /* 읽기 목표 */
-  const [goal, setGoal] = useState({ deadline: family?.deadline || '', goalTarget: family?.goalTarget || 'all' });
 
   const nextOrder = books.length ? Math.max(...books.map((b) => b.order ?? 0)) + 1 : 0;
 
@@ -124,16 +123,7 @@ export default function Settings({ focus, fid, family, pace, kids, books, active
 
       <Section id="goal" title="🎯 읽기 목표 (마감일)" open={focus === 'goal'}>
         <p className="muted">마감일과 목표 범위를 정하면 책 탭에 「일주일에 몇 권」이 표시돼요. 가족 모두에게 같은 목표가 적용돼요.</p>
-        <label className="f">목표 범위</label>
-        <select className="input" value={goal.goalTarget} onChange={(e) => setGoal({ ...goal, goalTarget: e.target.value })}>
-          {goalOptions(books).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <label className="f">마감일</label>
-        <input className="input" type="date" value={goal.deadline} onChange={(e) => setGoal({ ...goal, deadline: e.target.value })} />
-        <div className="row" style={{ marginTop: 10 }}>
-          <button className="btn primary grow" onClick={() => goal.deadline ? run(() => updateFamilyInfo(fid, goal), '목표를 저장했어요') : say('마감일을 골라 주세요')}>저장</button>
-          {family?.deadline && <button className="btn grow danger" onClick={() => run(async () => { await updateFamilyInfo(fid, { deadline: '' }); setGoal({ ...goal, deadline: '' }); }, '목표를 해제했어요')}>해제</button>}
-        </div>
+        <GoalForm family={family} books={books} onGoal={(g) => run(() => setGoal(fid, g), '목표를 저장했어요')} />
         {pace?.hasGoal && pace.level !== 'over' && pace.level !== 'complete' && <div className="ok">지금 기준: 남은 {pace.remaining}권 → 일주일에 {pace.perWeek}권</div>}
       </Section>
 

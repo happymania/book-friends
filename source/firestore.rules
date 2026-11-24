@@ -162,8 +162,10 @@ service cloud.firestore {
             || isClassMember(request.resource.data.classId));
       // 아이 기기는 읽기 목표(마감일·범위)만 수정 가능
       allow update: if isDevice(fid)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deadline', 'goalTarget'])
-        && request.resource.data.get('goalTarget', 'all').matches('^(all|selected|recommended|cat:.{1,12})$')
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deadline', 'goalTarget', 'goalBookIds'])
+        && request.resource.data.get('goalTarget', 'all').matches('^(all|selected|recommended|custom|cat:.{1,12})$')
+        && request.resource.data.get('goalBookIds', []) is list
+        && request.resource.data.get('goalBookIds', []).size() <= 100
         && request.resource.data.get('deadline', '') is string
         && request.resource.data.get('deadline', '').size() <= 10;
       allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;

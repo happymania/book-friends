@@ -51,21 +51,44 @@ const PACE_MSG = {
   none: ['📚', '목표로 삼을 책이 없어요.'],
 };
 
-function GoalForm({ family, books, onGoal, onClose }) {
+export function GoalForm({ family, books, onGoal, onClose }) {
   const [deadline, setDeadline] = useState(family?.deadline || '');
   const [target, setTarget] = useState(family?.goalTarget || 'all');
+  const [ids, setIds] = useState(family?.goalBookIds || []);
+  const custom = target === 'custom';
+  const byId = Object.fromEntries(books.map((b) => [b.id, b]));
+  const chosen = ids.filter((id) => byId[id]);
+  const rest = books.filter((b) => !chosen.includes(b.id));
   return (
     <div className="goalform">
       <label className="f">목표 범위</label>
       <select className="input" value={target} onChange={(e) => setTarget(e.target.value)}>
         {goalOptions(books).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
+      {custom && (
+        <div className="picker">
+          <label className="f">책 고르기 (고르면 아래에 추가돼요)</label>
+          <select className="input" value="" onChange={(e) => { if (e.target.value) setIds([...chosen, e.target.value]); }}>
+            <option value="">{rest.length ? '▾ 책을 골라 주세요' : '추가할 책이 없어요'}</option>
+            {rest.map((b) => <option key={b.id} value={b.id}>{`[${b.type}] ${b.title}`}</option>)}
+          </select>
+          <div className="pickchips">
+            {chosen.length === 0 && <span className="muted">아직 고른 책이 없어요.</span>}
+            {chosen.map((id) => (
+              <span className="pickchip" key={id}>{byId[id].title}
+                <button type="button" aria-label={`${byId[id].title} 빼기`} onClick={() => setIds(chosen.filter((x) => x !== id))}>✕</button>
+              </span>
+            ))}
+          </div>
+          <div className="muted">고른 책 {chosen.length}권</div>
+        </div>
+      )}
       <label className="f">마감일</label>
       <input className="input" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
       <div className="row" style={{ marginTop: 10 }}>
-        <button className="btn primary grow" disabled={!deadline} onClick={() => { onGoal({ deadline, goalTarget: target }); onClose(); }}>저장</button>
-        {family?.deadline && <button className="btn grow danger" onClick={() => { onGoal({ deadline: '', goalTarget: target }); onClose(); }}>해제</button>}
-        <button className="btn grow" onClick={onClose}>닫기</button>
+        <button className="btn primary grow" disabled={!deadline || (custom && chosen.length === 0)} onClick={() => { onGoal({ deadline, goalTarget: target, goalBookIds: chosen }); onClose?.(); }}>저장</button>
+        {family?.deadline && <button className="btn grow danger" onClick={() => { onGoal({ deadline: '', goalTarget: target, goalBookIds: chosen }); onClose?.(); }}>해제</button>}
+        {onClose && <button className="btn grow" onClick={onClose}>닫기</button>}
       </div>
     </div>
   );

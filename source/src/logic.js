@@ -18,20 +18,22 @@ const isDone = (records, id) => records[id]?.read === 'done';
 
 /* ---------- 읽기 목표 범위 ---------- */
 // goalTarget: 'all' | 'selected' | 'recommended' | 'cat:문학' 등
-export function targetBooks(books, gt) {
+export function targetBooks(books, gt, ids = []) {
+  if (gt === 'custom') return books.filter((b) => ids.includes(b.id));
   if (gt === 'selected') return books.filter((b) => b.type === '선정');
   if (gt === 'recommended') return books.filter((b) => b.type === '권장');
   if (typeof gt === 'string' && gt.startsWith('cat:')) return books.filter((b) => b.cat === gt.slice(4));
   return books;
 }
 export function targetLabel(gt) {
+  if (gt === 'custom') return '선택한 책';
   if (gt === 'selected') return '선정도서';
   if (gt === 'recommended') return '권장도서';
   if (typeof gt === 'string' && gt.startsWith('cat:')) return gt.slice(4) + ' 분류';
   return '전체 도서';
 }
 export function goalOptions(books) {
-  const opts = [{ value: 'all', label: `전체 도서 (${books.length}권)` }];
+  const opts = [{ value: 'all', label: `전체 도서 (${books.length}권)` }, { value: 'custom', label: '직접 고르기 (책을 하나씩 추가)' }];
   const sel = targetBooks(books, 'selected').length, rec = targetBooks(books, 'recommended').length;
   if (sel) opts.push({ value: 'selected', label: `선정도서 (${sel}권)` });
   if (rec) opts.push({ value: 'recommended', label: `권장도서 (${rec}권)` });
@@ -43,7 +45,7 @@ export function goalOptions(books) {
 
 /* ---------- 읽기 페이스 ---------- */
 export function computePace({ books, records, family, today }) {
-  const target = targetBooks(books, family?.goalTarget);
+  const target = targetBooks(books, family?.goalTarget, family?.goalBookIds || []);
   const total = target.length;
   const doneBooks = target.filter((b) => isDone(records, b.id));
   const done = doneBooks.length;
