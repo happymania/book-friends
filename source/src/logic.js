@@ -35,10 +35,10 @@ export function targetLabel(gt) {
 export function goalOptions(books) {
   const opts = [{ value: 'all', label: `전체 도서 (${books.length}권)` }, { value: 'custom', label: '직접 고르기 (책을 하나씩 추가)' }];
   const sel = targetBooks(books, 'selected').length, rec = targetBooks(books, 'recommended').length;
-  if (sel) opts.push({ value: 'selected', label: `선정도서 (${sel}권)` });
-  if (rec) opts.push({ value: 'recommended', label: `권장도서 (${rec}권)` });
+  if (sel) opts.push({ value: 'selected', label: `선정도서 전체 (${sel}권)` });
+  if (rec) opts.push({ value: 'recommended', label: `권장도서 전체 (${rec}권)` });
   [...new Set(books.map((b) => b.cat).filter(Boolean))].forEach((c) => {
-    opts.push({ value: 'cat:' + c, label: `${c} 분류 (${targetBooks(books, 'cat:' + c).length}권)` });
+    opts.push({ value: 'cat:' + c, label: `${c} 분류 전체 (${targetBooks(books, 'cat:' + c).length}권)` });
   });
   return opts;
 }

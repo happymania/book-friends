@@ -70,7 +70,7 @@ export function GoalForm({ family, books, records = {}, onGoal, onClose }) {
           <label className="f">책 고르기 (고르면 아래에 추가돼요)</label>
           <select className="input" value="" onChange={(e) => { if (e.target.value) setIds([...chosen, e.target.value]); }}>
             <option value="">{rest.length ? '▾ 책을 골라 주세요' : '추가할 책이 없어요'}</option>
-            {rest.map((b) => <option key={b.id} value={b.id}>{`[${b.type}] ${b.title}`}</option>)}
+            {rest.map((b) => <option key={b.id} value={b.id}>{`[${b.type}] ${b.title} (${records[b.id]?.read === 'reading' ? '읽는중' : '안읽음'})`}</option>)}
           </select>
           <div className="pickchips">
             {chosen.length === 0 && <span className="muted">아직 고른 책이 없어요.</span>}
