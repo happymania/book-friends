@@ -196,6 +196,9 @@ export default function BookList({ books, records, isParent, onLib, onRead, onRe
                 {r === 'done' && (records[b.id]?.rating > 0 || records[b.id]?.review) && (
                   <div className="reviewshow">{records[b.id].rating > 0 && <Stars value={records[b.id].rating} />}{records[b.id].review && <div>“{records[b.id].review}”</div>}</div>
                 )}
+                {r === 'done' && !(records[b.id]?.rating > 0 || records[b.id]?.review) && (
+                  <div className="muted" style={{ marginTop: 6 }}>📝 별점과 한줄평은 「어린이 모드」에서 남겨요.</div>
+                )}
               </>
             ) : (
               <>
