@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import {
-  createClass, joinClass, leaveClass, setClassShare, setClassChatUrl, cleanChatUrl, addShare, setShareStatus, deleteShare,
+  createClass, joinClass, findClass, setNameOpen, leaveClass, setClassShare, setClassChatUrl, cleanChatUrl, addShare, setShareStatus, deleteShare,
   requestShare, cancelRequest, replyRequest, updateRequestNote, markPosterSeen, markReplySeen,
 } from './db';
 import { ms, noteTime, reqUnread, replyUnread, noteEdited } from './useShareNews';
@@ -22,15 +22,23 @@ export default function ClassTab({ user, fid, family, kids, books, records, shar
 
 /* ---------- 반 만들기 / 참여 ---------- */
 function Start({ user, fid, family, say }) {
-  const [name, setName] = useState(`${family?.school || ''} ${family?.className || ''}`.trim());
-  const [code, setCode] = useState('');
-  const [chat, setChat] = useState('');
+  const [schoolIn, setSchoolIn] = useState(family?.school || '');
+  const school = schoolIn.trim();
+  const [grade, setGrade] = useState('');
+  const [num, setNum] = useState('');
+  const [found, setFound] = useState(undefined); // undefined: 아직 확인 안 함, null: 없음, 객체: 있음
   const [busy, setBusy] = useState(false);
+  const digits = (v) => v.replace(/\D/g, '').slice(0, 2);
+  const g = Number(grade), n = Number(num);
+  const valid = !!school && g >= 1 && g <= 6 && n >= 1 && n <= 30;
+  const hint = (grade && (g < 1 || g > 6)) ? '학년은 1~6 사이 숫자로 적어 주세요.'
+      : (num && (n < 1 || n > 30)) ? '반은 1~30 사이 숫자로 적어 주세요.' : '';
   const run = async (fn, ok) => {
     setBusy(true);
-    try { await fn(); say(ok); } catch (e) { say('실패: ' + (e.message || e.code)); }
+    try { await fn(); if (ok) say(ok); } catch (e) { say('실패: ' + (e.message || e.code)); }
     setBusy(false);
   };
+  const check = () => run(async () => { setFound(await findClass(school, g, n)); });
   return (
     <>
       <div className="glass card">
@@ -41,29 +49,95 @@ function Start({ user, fid, family, say }) {
           <li>순위나 비교는 없어요. 참여 5명 이상부터 평균을 보여줘요.</li>
           <li>언제든 반에서 나가면 우리 집 정보가 모두 지워져요.</li>
         </ul>
-        <p className="muted">순서: 한 집이 반을 만들어 코드를 받고, 같은 반 학부모가 그 코드로 참여해요. 반에는 어린이 폰이 아니라 부모 계정으로만 들어갈 수 있어요. 자세한 설명은 설정의 「사용 방법」에 있어요.</p>
+        <p className="muted">반에는 어린이 폰이 아니라 부모 계정으로만 들어갈 수 있어요. 자세한 설명은 설정의 「사용 방법」에 있어요.</p>
       </div>
       <div className="glass card">
-        <h2>학급 코드로 참여</h2>
-        <input className="input code-input" placeholder="코드 6자리" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
-        <button className="btn primary block" style={{ marginTop: 8 }} disabled={busy || code.trim().length < 6}
-          onClick={() => run(() => joinClass(user, fid, code), '반에 참여했어요')}>참여하기</button>
+        <h2>우리 반 입력</h2>
+        <p className="muted" style={{ marginTop: 0 }}>학교 이름은 같은 반 학부모와 똑같이 정확하게 적어 주세요. 학년과 반은 숫자만 적으면 같은 반과 자동으로 연결돼요.</p>
+        <div className="classrow">
+          <div className="school-box"><label className="f">학교 *</label>
+            <input className="input" placeholder="예: 리라초등학교" maxLength={20} value={schoolIn}
+              onChange={(e) => { setSchoolIn(e.target.value); setFound(undefined); }} /></div>
+          <div><label className="f">학년 *</label>
+            <input className="input num-input" inputMode="numeric" placeholder="4" maxLength={2} value={grade}
+              onChange={(e) => { setGrade(digits(e.target.value)); setFound(undefined); }} /></div>
+          <div><label className="f">반 *</label>
+            <input className="input num-input" inputMode="numeric" placeholder="3" maxLength={2} value={num}
+              onChange={(e) => { setNum(digits(e.target.value)); setFound(undefined); }} /></div>
+        </div>
+        {hint && <p className="err" style={{ marginTop: 6 }}>{hint}</p>}
+        <button className="btn primary block" style={{ marginTop: 8 }} disabled={busy || !valid} onClick={check}>우리 반 확인하기</button>
       </div>
-      <div className="glass card">
-        <h2>새 반 만들기</h2>
-        <label className="f">반 이름</label>
-        <input className="input" placeholder="예: 리라초 4학년 3반" value={name} onChange={(e) => setName(e.target.value)} />
-        {CHAT_ENABLED && (<>
-          <label className="f">학급 단톡방 링크 (선택)</label>
-          <input className="input" placeholder="https://open.kakao.com/..." value={chat} onChange={(e) => setChat(e.target.value)} />
-          <p className="muted">나눔 연락은 이 단톡방에서 해요. 나중에 설정에서 바꿀 수 있어요.</p>
-        </>)}
-        {!CHAT_ENABLED && <p className="muted">💬 학급 단톡방은 정책상 사용하지 않습니다.</p>}
-        <button className="btn block" style={{ marginTop: 8 }} disabled={busy || !name.trim()}
-          onClick={() => run(() => createClass(user, fid, { name: name.trim(), school: family?.school, className: family?.className, chatUrl: CHAT_ENABLED ? cleanChatUrl(chat) : '' }), '반을 만들었어요')}>반 만들고 코드 받기</button>
-        <p className="muted">만든 뒤 나오는 코드를 같은 반 학부모에게 알려 주세요.</p>
-      </div>
+      {found !== undefined && (
+        <div className="glass card">
+          {found && found.open && (<>
+            <h2>✅ {found.name}</h2>
+            <p>같은 반이 이미 있어요. 아래 버튼으로 바로 참여할 수 있어요.</p>
+            <button className="btn primary block" disabled={busy}
+              onClick={() => run(() => joinClass(user, fid, found.code), '반에 참여했어요')}>이 반에 참여하기</button>
+          </>)}
+          {found && !found.open && (<>
+            <h2>🔒 {found.name}</h2>
+            <p>이 반은 지금 새 참여를 받지 않아요. 반을 만든 학부모에게 문의해 주세요.</p>
+          </>)}
+          {found === null && (<>
+            <h2>🆕 {school} {g}학년 {n}반</h2>
+            <p>아직 만들어진 반이 없어요. 우리 반에서 처음이라면 반을 만들어 주세요. 다른 학부모는 같은 학년·반을 입력하면 바로 들어와요.</p>
+            {!CHAT_ENABLED && <p className="muted">💬 학급 단톡방은 정책상 사용하지 않습니다.</p>}
+            <button className="btn block" disabled={busy}
+              onClick={() => run(() => createClass(user, fid, { school, grade: g, num: n }), '반을 만들었어요')}>이 반 만들기</button>
+          </>)}
+        </div>
+      )}
     </>
+  );
+}
+
+/* ---------- 초대 버튼: 공유 창(없으면 복사)으로 초대 문구 보내기 ---------- */
+function InviteBtn({ name, say }) {
+  const url = location.origin + location.pathname;
+  const text = `「책은 내 친구」 ${name || '우리 반'} 함께 읽기에 초대해요 📚\n\n1) 앱 열기: ${url}\n2) 구글 로그인 → 「학급」 탭\n3) 학교 이름과 학년·반 숫자를 입력하고 「우리 반 확인하기」 → 「이 반에 참여하기」\n\n※ 반을 새로 만들지 말고 참여해 주세요.`;
+  const go = async () => {
+    try {
+      if (navigator.share) { await navigator.share({ text }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(text); say('초대 문구를 복사했어요. 메시지에 붙여 넣어 보내 주세요.'); }
+    catch (e) { say('복사하지 못했어요. 앱 주소를 직접 알려 주세요.'); }
+  };
+  return <button className="btn primary block" style={{ marginTop: 8 }} onClick={go}>📨 같은 반 학부모 초대하기</button>;
+}
+
+/* ---------- 방장: 같은 반 참여 받기 켜기/끄기 ---------- */
+function OpenToggle({ cid, cls, say }) {
+  const [busy, setBusy] = useState(false);
+  const [g, setG] = useState('');
+  const [n, setN] = useState('');
+  const digits = (v) => v.replace(/\D/g, '').slice(0, 2);
+  const open = cls?.nameOpen === true;
+  const legacy = !cls?.key;
+  const ok = !legacy || (Number(g) >= 1 && Number(g) <= 6 && Number(n) >= 1 && Number(n) <= 30);
+  const flip = async (v) => {
+    setBusy(true);
+    try { await setNameOpen(cid, cls, v, legacy ? { grade: g, num: n } : undefined); say(v ? '같은 반 참여를 켰어요' : '새 참여를 막았어요'); }
+    catch (e) { say('실패: ' + (e.message || e.code)); }
+    setBusy(false);
+  };
+  return (
+    <div className="glass card">
+      <h2>🔓 같은 반 참여 받기</h2>
+      {legacy && (<>
+        <p className="muted" style={{ marginTop: 0 }}>이 반은 학년·반 숫자가 아직 없어요. 한 번만 적어 주세요.</p>
+        <div className="classrow two">
+          <div><label className="f">학년 *</label><input className="input num-input" inputMode="numeric" placeholder="4" maxLength={2} value={g} onChange={(e) => setG(digits(e.target.value))} /></div>
+          <div><label className="f">반 *</label><input className="input num-input" inputMode="numeric" placeholder="3" maxLength={2} value={n} onChange={(e) => setN(digits(e.target.value))} /></div>
+        </div>
+      </>)}
+      <label className="switch">
+        <input type="checkbox" checked={open} disabled={busy || (!open && !ok)} onChange={(e) => flip(e.target.checked)} />
+        <span>같은 학교·학년·반을 입력한 학부모가 바로 들어올 수 있게 하기</span>
+      </label>
+      <p className="muted">우리 반 학부모가 다 모였다면 꺼 두세요. 끄면 새로 들어오려는 사람은 참여할 수 없어요.</p>
+    </div>
   );
 }
 
@@ -106,10 +180,11 @@ function Joined({ user, fid, family, kids, books, records, shares, classReady, s
       {tab === 'more' && (
         <>
           <div className="glass card">
-            <h2>학급 코드</h2>
-            <div className="code-box">{cls?.code || family?.classCode}</div>
-            <p className="muted">같은 반 학부모에게 알려 주세요. 이 코드를 아는 보호자만 참여할 수 있어요.</p>
+            <h2>같은 반 학부모 초대</h2>
+            <p className="muted" style={{ marginTop: 0 }}>다른 학부모는 학급 탭에서 학교 이름과 학년·반 숫자를 입력하면 이 반에 바로 들어와요. 반을 새로 만들지 않게 안내해 주세요.</p>
+            <InviteBtn name={cls?.name} say={say} />
           </div>
+          {cls?.ownerUid === user.uid && <OpenToggle cid={cid} cls={cls} say={say} />}
           {CHAT_ENABLED && <ChatLink cls={cls} cid={cid} isOwner={cls?.ownerUid === user.uid} say={say} />}
           {!CHAT_ENABLED && (
             <div className="glass card">

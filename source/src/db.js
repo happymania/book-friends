@@ -208,15 +208,53 @@ export async function importLegacy(fid, kidId, books) {
 const cdoc = (cid, ...p) => doc(db, 'classes', cid, ...p);
 const ccol = (cid, ...p) => collection(db, 'classes', cid, ...p);
 
-// 반 만들기: 내 가족을 첫 구성원으로 등록하고 참여 코드를 발급
-export async function createClass(user, fid, { name, school, className, chatUrl }) {
+// 반 이름 비교용: 학교 글자(띄어쓰기·기호 무시) + 학년 숫자 + 반 숫자
+export const nameKey = (s) => (s || '').toLowerCase().replace(/[\s\-_.·,/]/g, '').slice(0, 40);
+export const classKey = (school, grade, num) => `${nameKey(school)}-${Number(grade)}-${Number(num)}`;
+export const classTitle = (school, grade, num) => `${(school || '').trim()} ${Number(grade)}학년 ${Number(num)}반`.trim();
+const ddoc = (key) => doc(db, 'classDirectory', key);
+
+// 반 만들기: 내 가족을 첫 구성원으로 등록하고, 학교·학년·반으로 찾을 수 있게 등록
+export async function createClass(user, fid, { school, grade, num, chatUrl }) {
+  const key = classKey(school, grade, num);
+  const name = classTitle(school, grade, num);
+  if ((await getDoc(ddoc(key))).exists()) throw new Error('같은 반이 이미 있어요. 「우리 반 확인하기」에서 참여해 주세요.');
   const cid = doc(collection(db, 'classes')).id;
   const code = genCode(6);
-  await setDoc(cdoc(cid), { name, school: school || '', className: className || '', code, ownerUid: user.uid, chatUrl: chatUrl || '', createdAt: serverTimestamp() });
+  await setDoc(cdoc(cid), { name, school: school || '', className: `${Number(grade)}학년 ${Number(num)}반`, key, code, ownerUid: user.uid, chatUrl: chatUrl || '', nameOpen: true, createdAt: serverTimestamp() });
   await setDoc(cdoc(cid, 'members', user.uid), { familyId: fid, code, createdAt: serverTimestamp() });
   await setDoc(doc(db, 'classCodes', code), { classId: cid });
   await updateDoc(fdoc(fid), { classId: cid, classCode: code, classShare: true });
+  await setDoc(ddoc(key), { classId: cid, name, code, open: true, createdAt: serverTimestamp() });
   return cid;
+}
+
+// 학교·학년·반으로 찾기: 없으면 null, 있으면 { cid, name, code, open }
+export async function findClass(school, grade, num) {
+  const s = await getDoc(ddoc(classKey(school, grade, num)));
+  if (!s.exists()) return null;
+  const d = s.data();
+  return { cid: d.classId, name: d.name, code: d.open ? d.code : '', open: !!d.open };
+}
+
+// 방장: 같은 반 학부모의 참여 받기 켜기/끄기 (옛날에 만든 반은 학년·반 숫자를 한 번 등록)
+export async function setNameOpen(cid, cls, open, parts) {
+  let key = cls?.key;
+  const extra = {};
+  if (!key) {
+    if (!parts) throw new Error('학년과 반을 입력해 주세요.');
+    key = classKey(cls.school, parts.grade, parts.num);
+    extra.key = key;
+    extra.name = classTitle(cls.school, parts.grade, parts.num);
+    extra.className = `${Number(parts.grade)}학년 ${Number(parts.num)}반`;
+  }
+  const ref = ddoc(key);
+  const cur = await getDoc(ref);
+  if (cur.exists() && cur.data().classId !== cid) throw new Error('같은 학교·학년·반의 다른 반이 이미 있어요.');
+  const name = extra.name || cls.name;
+  if (!cur.exists()) await setDoc(ref, { classId: cid, name, code: open ? cls.code : '', open: !!open, createdAt: serverTimestamp() });
+  else await updateDoc(ref, { name, code: open ? cls.code : '', open: !!open });
+  await updateDoc(cdoc(cid), { nameOpen: !!open, ...extra });
 }
 
 // 코드로 반 참여

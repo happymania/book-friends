@@ -258,3 +258,10 @@ ul.plain.sharenotes li { list-style: none; margin: 0; }
 .edited { margin-left: 8px; font-size: .85rem; color: var(--orange-d); }
 .seen { margin-left: 6px; font-size: .85rem; color: #8a7a4a; }
 .seen.on { color: #2f8f55; }
+
+/* 학교·학년·반 입력 */
+.classrow { display: grid; grid-template-columns: 1fr 76px 76px; gap: 8px; align-items: end; }
+.classrow.two { grid-template-columns: 76px 76px; }
+.num-input { text-align: center; letter-spacing: .08em; min-height: 44px; }
+.school-box { min-width: 0; }
+@media (max-width: 380px) { .classrow { grid-template-columns: 1fr 1fr; } .school-box { grid-column: 1 / -1; } }

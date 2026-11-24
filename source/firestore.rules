@@ -62,6 +62,24 @@ service cloud.firestore {
       allow delete: if isMember(resource.data.familyId);
     }
 
+    // 학교·학년·반으로 반 찾기: 정확한 이름을 알아야 단건 조회, 목록은 불가. 반을 만든 사람만 등록·수정·삭제
+    match /classDirectory/{key} {
+      allow get: if isParentAccount();
+      allow list: if false;
+      allow create: if isParentAccount() && key.size() <= 60
+        && request.resource.data.keys().hasOnly(['classId', 'name', 'code', 'open', 'createdAt'])
+        && request.resource.data.classId is string
+        && request.resource.data.open is bool
+        && request.resource.data.createdAt == request.time
+        && classOwner(request.resource.data.classId) == request.auth.uid;
+      allow update: if isParentAccount()
+        && classOwner(resource.data.classId) == request.auth.uid
+        && request.resource.data.classId == resource.data.classId
+        && request.resource.data.keys().hasOnly(['classId', 'name', 'code', 'open', 'createdAt'])
+        && request.resource.data.open is bool;
+      allow delete: if isParentAccount() && classOwner(resource.data.classId) == request.auth.uid;
+    }
+
     // 학급 참여 코드: 코드를 아는 사람만 단건 조회
     match /classCodes/{code} {
       allow get: if signedIn();
