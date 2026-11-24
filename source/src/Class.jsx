@@ -183,6 +183,7 @@ function Joined({ user, fid, family, kids, books, records, shares, classReady, s
             <h2>같은 반 학부모 초대</h2>
             <p className="muted" style={{ marginTop: 0 }}>다른 학부모는 학급 탭에서 학교 이름과 학년·반 숫자를 입력하면 이 반에 바로 들어와요. 반을 새로 만들지 않게 안내해 주세요.</p>
             <InviteBtn name={cls?.name} say={say} />
+            <p className="muted" style={{ marginBottom: 0 }}>누르면 카카오톡·문자 등으로 앱 주소와 가입 방법을 보낼 수 있어요. 공유 창이 안 뜨면 안내 문구가 복사되니 메시지에 붙여 넣어 주세요.</p>
           </div>
           {cls?.ownerUid === user.uid && <OpenToggle cid={cid} cls={cls} say={say} />}
           {CHAT_ENABLED && <ChatLink cls={cls} cid={cid} isOwner={cls?.ownerUid === user.uid} say={say} />}
