@@ -3,9 +3,10 @@ import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import {
   createClass, joinClass, leaveClass, setClassShare, setClassChatUrl, cleanChatUrl, addShare, setShareStatus, deleteShare,
-  requestShare, cancelRequest,
+  requestShare, cancelRequest, replyRequest, updateRequestNote,
 } from './db';
 import { aggregateClass, statPayload, MIN_KIDS } from './logic';
+import { ShareSteps } from './Help.jsx';
 
 const KIND = { offer: { label: '나눔', icon: '🎁', btn: '받고 싶어요' }, want: { label: '구해요', icon: '🙋', btn: '빌려줄 수 있어요' } };
 
@@ -36,6 +37,7 @@ function Start({ user, fid, family, say }) {
           <li>순위나 비교는 없어요. 참여 5명 이상부터 평균을 보여줘요.</li>
           <li>언제든 반에서 나가면 우리 집 정보가 모두 지워져요.</li>
         </ul>
+        <p className="muted">순서: 한 집이 반을 만들어 코드를 받고, 같은 반 학부모가 그 코드로 참여해요. 반에는 아이 폰이 아니라 부모 계정으로만 들어갈 수 있어요. 자세한 설명은 설정의 「사용 방법」에 있어요.</p>
       </div>
       <div className="glass card">
         <h2>학급 코드로 참여</h2>
@@ -208,7 +210,11 @@ function Board({ cid, fid, family, books, shares, say, chatUrl }) {
         {chatUrl && /^https:\/\//.test(chatUrl) && (
           <a className="btn block chatlink" href={chatUrl} target="_blank" rel="noopener noreferrer">💬 학급 단톡방 열기 (연락은 여기서)</a>
         )}
-        <p className="muted">연락처는 앱 밖(학급 단톡방 등)에서 주고받아요. 전화번호·주소는 적지 마세요. 거래·판매는 하지 않고 나눔과 빌려주기만 해요.</p>
+        <details className="help-item" open={shares.length === 0}>
+          <summary>❓ 책 나눔은 이렇게 해요</summary>
+          <div className="help-body"><ShareSteps /></div>
+        </details>
+        <p className="muted">신청과 답장은 앱 안의 짧은 메모로 주고받고, 책은 학교에서 아이 편으로 교환해요. 전화번호·주소는 적지 마세요. 판매·거래는 없고 나눔과 빌려주기만 해요.</p>
       </div>
       {adding && <ShareForm cid={cid} fid={fid} family={family} books={books} say={say} onDone={() => setAdding(false)} />}
       {list.length === 0 && <div className="glass card empty">아직 글이 없어요.</div>}
@@ -246,6 +252,60 @@ function ShareForm({ cid, fid, family, books, say, onDone }) {
   );
 }
 
+function ReqRow({ r, cid, sid, say }) {
+  const [v, setV] = useState('');
+  const [open, setOpen] = useState(false);
+  const send = async () => {
+    try { await replyRequest(cid, sid, r.familyId, v); say('답장을 보냈어요'); setOpen(false); setV(''); }
+    catch (e) { say('실패: ' + (e.message || e.code)); }
+  };
+  return (
+    <div className="it reqrow">
+      <div><b>{r.nickname || '이웃'}</b>{r.note ? `: ${r.note}` : ''}</div>
+      {r.reply && <div className="muted">내 답장: {r.reply}</div>}
+      {open ? (
+        <div style={{ marginTop: 6 }}>
+          <input className="input" maxLength={100} placeholder="예: 내일 1교시 전에 3반 앞에서 줄게요" value={v} onChange={(e) => setV(e.target.value)} />
+          <div className="row" style={{ marginTop: 6 }}>
+            <button className="btn sm primary grow" onClick={send}>보내기</button>
+            <button className="btn sm" onClick={() => setOpen(false)}>닫기</button>
+          </div>
+        </div>
+      ) : <button className="btn sm" style={{ marginTop: 6 }} onClick={() => { setV(r.reply || ''); setOpen(true); }}>{r.reply ? '답장 고치기' : '💬 답장하기'}</button>}
+    </div>
+  );
+}
+
+function MyReq({ myReq, cid, sid, fid, say, onCancel }) {
+  const [v, setV] = useState('');
+  const [open, setOpen] = useState(false);
+  const send = async () => {
+    try { await updateRequestNote(cid, sid, fid, v); say('메모를 남겼어요'); setOpen(false); }
+    catch (e) { say('실패: ' + (e.message || e.code)); }
+  };
+  return (
+    <div style={{ marginTop: 8 }}>
+      <div className="ok">✔ 신청했어요. 글쓴이의 답장은 이 화면에 떠요. (앱을 열어 확인해 주세요)</div>
+      {myReq.note && <div className="muted">내 메모: {myReq.note}</div>}
+      {myReq.reply ? <div className="replybox">💬 글쓴이 답장: {myReq.reply}</div> : <div className="muted">아직 답장이 없어요.</div>}
+      {open ? (
+        <div style={{ marginTop: 6 }}>
+          <input className="input" maxLength={100} placeholder="메모 남기기 (100자)" value={v} onChange={(e) => setV(e.target.value)} />
+          <div className="row" style={{ marginTop: 6 }}>
+            <button className="btn sm primary grow" onClick={send}>보내기</button>
+            <button className="btn sm" onClick={() => setOpen(false)}>닫기</button>
+          </div>
+        </div>
+      ) : (
+        <div className="row" style={{ marginTop: 6 }}>
+          <button className="btn sm grow" onClick={() => { setV(myReq.note || ''); setOpen(true); }}>메모 고쳐 보내기</button>
+          <button className="btn sm" onClick={onCancel}>신청 취소</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ShareItem({ cid, fid, family, share, say }) {
   const mineOwn = share.familyId === fid;
   const k = KIND[share.kind] || KIND.offer;
@@ -274,8 +334,8 @@ function ShareItem({ cid, fid, family, share, say }) {
         <>
           {reqs.length > 0 && (
             <div className="reqs">
-              <div className="label-row">신청 {reqs.length}건 · 단톡방에서 이름을 말하고 연락해 주세요</div>
-              {reqs.map((r) => <div className="it" key={r.familyId}><b>{r.nickname || '이웃'}</b>{r.note ? ` · ${r.note}` : ''}</div>)}
+              <div className="label-row">신청 {reqs.length}건 · 답장 메모를 남기고, 책은 학교에서 아이 편으로 전달해요</div>
+              {reqs.map((r) => <ReqRow key={r.familyId} r={r} cid={cid} sid={share.id} say={say} />)}
             </div>
           )}
           <div className="row" style={{ marginTop: 8 }}>
@@ -284,10 +344,7 @@ function ShareItem({ cid, fid, family, share, say }) {
           </div>
         </>
       ) : done ? null : myReq ? (
-        <div className="row" style={{ marginTop: 8 }}>
-          <span className="ok grow">✔ 신청했어요. 글쓴이가 연락할 거예요.</span>
-          <button className="btn sm" onClick={() => run(() => cancelRequest(cid, share.id, fid), '신청을 취소했어요')}>취소</button>
-        </div>
+        <MyReq myReq={myReq} cid={cid} sid={share.id} fid={fid} say={say} onCancel={() => run(() => cancelRequest(cid, share.id, fid), '신청을 취소했어요')} />
       ) : ask ? (
         <div style={{ marginTop: 8 }}>
           <input className="input" maxLength={100} placeholder="예: 민준이 엄마예요, 주말에 가능해요" value={note} onChange={(e) => setNote(e.target.value)} />

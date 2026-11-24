@@ -287,6 +287,14 @@ export function requestShare(cid, sid, fid, { nickname, note }) {
     familyId: fid, nickname: (nickname || '').trim().slice(0, 30), note: (note || '').trim().slice(0, 100), createdAt: serverTimestamp(),
   });
 }
+// 글쓴이가 신청자에게 남기는 답장(최근 것 하나만 보관)
+export function replyRequest(cid, sid, rid, text) {
+  return updateDoc(cdoc(cid, 'shares', sid, 'requests', rid), { reply: (text || '').trim().slice(0, 100) });
+}
+// 신청자가 자기 메모를 고쳐서 다시 남기기
+export function updateRequestNote(cid, sid, fid, note) {
+  return updateDoc(cdoc(cid, 'shares', sid, 'requests', fid), { note: (note || '').trim().slice(0, 100) });
+}
 export function cancelRequest(cid, sid, fid) {
   return deleteDoc(cdoc(cid, 'shares', sid, 'requests', fid));
 }

@@ -7,6 +7,7 @@ import {
   importBooks, resetToTemplate, importLegacy, updateFamilyInfo,
 } from './db';
 import { CATS, KID_EMOJIS, parseCsv, downloadCsv } from './util';
+import { HelpGuide } from './Help.jsx';
 
 function Section({ title, children, open: o = false }) {
   const [open, setOpen] = useState(o);
@@ -62,6 +63,10 @@ export default function Settings({ fid, family, pace, kids, books, activeKid, us
 
   return (
     <>
+      <Section title="❓ 사용 방법 (처음이라면 여기부터)">
+        <HelpGuide />
+      </Section>
+
       <Section title="👧 아이 관리 · 연결 코드" open>
         {kids.map((k) => (
           <div className="kidrow" key={k.id}>

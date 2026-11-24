@@ -166,3 +166,12 @@ ul.plain { margin: 8px 0 0; padding-left: 1.2em; line-height: 1.7; }
 .sharetag { display: block; width: 100%; min-height: 44px; margin-top: 8px; border-radius: 12px; border: 1px dashed var(--purple); background: rgba(138,92,214,.1); color: #5b3aa6; font-size: .95rem; text-align: left; padding: 6px 12px; }
 
 .chatlink { display: flex; align-items: center; justify-content: center; margin-top: 8px; text-decoration: none; color: #3b2a00; background: #fee500; border-color: transparent; text-align: center; }
+
+.reqrow { display: block; padding: 8px 0; border-bottom: 1px dashed rgba(0,0,0,.1); }
+.replybox { margin-top: 6px; padding: 8px 10px; border-radius: 12px; background: var(--orange-l); color: var(--ink); }
+
+.help-item { border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.55); margin-bottom: 8px; }
+.help-item summary { min-height: 44px; display: flex; align-items: center; padding: 6px 14px; cursor: pointer; font-size: 1.02rem; color: var(--orange-d); }
+.help-body { padding: 0 14px 12px; line-height: 1.65; }
+.help-body ol, .help-body ul { margin: 4px 0 6px; padding-left: 1.3em; }
+.help-body li { margin-bottom: 4px; }

@@ -138,6 +138,16 @@ service cloud.firestore {
             && request.resource.data.nickname is string && request.resource.data.nickname.size() <= 30
             && request.resource.data.note is string && request.resource.data.note.size() <= 100
             && request.resource.data.keys().hasOnly(['familyId', 'nickname', 'note', 'createdAt']);
+          // 메모 주고받기: 글쓴이는 reply만, 신청자는 자기 메모(note)만 고칠 수 있음
+          allow update: if (isMember(shareOwnerFamily(cid, sid))
+                && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reply'])
+                && request.resource.data.reply is string && request.resource.data.reply.size() <= 100)
+            || (isMember(rid)
+                && request.resource.data.familyId == rid
+                && request.resource.data.get('reply', '') == resource.data.get('reply', '')
+                && request.resource.data.nickname is string && request.resource.data.nickname.size() <= 30
+                && request.resource.data.note is string && request.resource.data.note.size() <= 100
+                && request.resource.data.keys().hasOnly(['familyId', 'nickname', 'note', 'reply', 'createdAt']));
           allow delete: if isMember(rid) || isMember(shareOwnerFamily(cid, sid));
         }
       }
