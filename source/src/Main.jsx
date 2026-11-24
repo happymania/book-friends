@@ -62,14 +62,14 @@ export default function Main({ user, profile, kidMode }) {
     return () => offs.forEach((f) => f());
   }, [fid, kidMode, profile.kidId]);
 
-  // 아이 선택 보정
+  // 어린이 선택 보정
   useEffect(() => {
     if (kidMode) return;
     if (kids.length && !kids.find((k) => k.id === activeKid)) setActiveKid(kids[0].id);
   }, [kids, activeKid, kidMode]);
   useEffect(() => { if (!kidMode && activeKid) ls.set('bf_kid', activeKid); }, [activeKid, kidMode]);
 
-  // 선택된 아이의 기록
+  // 선택된 어린이의 기록
   useEffect(() => {
     setRecords({});
     setRecKid('');
@@ -90,7 +90,7 @@ export default function Main({ user, profile, kidMode }) {
     setClassReady(false);
     setShares([]);
     if (!cid) return;
-    if (kidMode) return; // 아이 기기는 학급 정보를 볼 수 없음
+    if (kidMode) return; // 어린이 기기는 학급 정보를 볼 수 없음
     let off = () => {};
     let dead = false;
     ensureClassMember(user, fid, cid, classCode).then((ok) => {
@@ -190,7 +190,7 @@ export default function Main({ user, profile, kidMode }) {
             <div className="title">📚 {family?.name || '책은 내 친구'}</div>
             <div className="muted">{family?.school} {family?.className}</div>
           </div>
-          <span className="modebadge">{kidMode ? '아이 기기' : isParent ? '부모 모드' : '아이 모드'}</span>
+          <span className="modebadge">{kidMode ? '어린이 기기' : isParent ? '부모 모드' : '어린이 모드'}</span>
         </div>
         <div className="fsrow">
           <span className="muted">글자 크기</span>
@@ -204,7 +204,7 @@ export default function Main({ user, profile, kidMode }) {
         {!kidMode && (
           <div className="row" style={{ marginTop: 8 }}>
             <button className="btn sm grow" onClick={() => switchMode(isParent ? 'child' : 'parent')}>
-              {isParent ? '🧒 아이 모드로 전환' : '🔒 부모 모드로 전환'}
+              {isParent ? '🧒 어린이 모드로 전환' : '🔒 부모 모드로 전환'}
             </button>
           </div>
         )}
@@ -223,7 +223,7 @@ export default function Main({ user, profile, kidMode }) {
       </div>
 
       {!kid && !kidMode ? (
-        <div className="glass card empty">아이 프로필이 없어요. 설정 탭에서 추가해 주세요.</div>
+        <div className="glass card empty">어린이 프로필이 없어요. 설정 탭에서 추가해 주세요.</div>
       ) : tab === 'books' ? (
         <>
         {isParent && <NoticeBar />}

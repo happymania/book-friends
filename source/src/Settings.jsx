@@ -28,7 +28,7 @@ export default function Settings({ fid, family, pace, kids, books, activeKid, us
     catch (e) { say('실패: ' + (e.message || e.code)); }
   };
 
-  /* 아이 */
+  /* 어린이 */
   const [kName, setKName] = useState(''); const [kEmoji, setKEmoji] = useState(KID_EMOJIS[1]);
   /* PIN */
   const [pin, setPinV] = useState('');
@@ -47,7 +47,7 @@ export default function Settings({ fid, family, pace, kids, books, activeKid, us
   async function doDelete() {
     if (delText.trim() !== '삭제') return say('입력 칸에 「삭제」를 정확히 입력해 주세요');
     if (!confirm(isOwner
-      ? '정말 탈퇴할까요?\n가족 데이터(아이 프로필·읽기 기록·도서 목록)와 계정이 모두 삭제되고 복구할 수 없어요.'
+      ? '정말 탈퇴할까요?\n가족 데이터(어린이 프로필·읽기 기록·도서 목록)와 계정이 모두 삭제되고 복구할 수 없어요.'
       : '이 가족에서 나가고 계정을 삭제할까요?')) return;
     setDelBusy(true);
     try {
@@ -94,27 +94,27 @@ export default function Settings({ fid, family, pace, kids, books, activeKid, us
         <HelpGuide />
       </Section>
 
-      <Section title="👧 아이 관리 · 연결 코드" open>
+      <Section title="👧 어린이 관리 · 연결 코드" open>
         {kids.map((k) => (
           <div className="kidrow" key={k.id}>
             <div className="row">
               <div className="grow" style={{ fontSize: '1.15rem' }}>{k.emoji} {k.name}</div>
               <button className="btn sm danger" onClick={() => confirm(`${k.name} 프로필과 읽기 기록을 모두 삭제할까요?`) && run(() => removeKid(fid, k, family?.classId), '삭제했어요')}>삭제</button>
             </div>
-            <div className="muted" style={{ margin: '6px 0 4px' }}>아이 기기 연결 코드</div>
+            <div className="muted" style={{ margin: '6px 0 4px' }}>어린이 기기 연결 코드</div>
             <div className="code-box">{k.connectCode}</div>
             <button className="btn sm block" style={{ marginTop: 6 }}
-              onClick={() => confirm('새 코드를 만들면 기존에 연결된 아이 기기가 모두 끊겨요. 계속할까요?') && run(() => regenConnectCode(fid, k), '새 코드를 만들었어요')}>코드 다시 만들기</button>
+              onClick={() => confirm('새 코드를 만들면 기존에 연결된 어린이 기기가 모두 끊겨요. 계속할까요?') && run(() => regenConnectCode(fid, k), '새 코드를 만들었어요')}>코드 다시 만들기</button>
           </div>
         ))}
-        <h3>아이 추가</h3>
+        <h3>어린이 추가</h3>
         <input className="input" placeholder="이름(별명)" value={kName} onChange={(e) => setKName(e.target.value)} />
         <div className="chips" style={{ margin: '8px 0' }}>{KID_EMOJIS.map((e) => <button key={e} className={'chip' + (kEmoji === e ? ' on' : '')} onClick={() => setKEmoji(e)}>{e}</button>)}</div>
         <button className="btn primary block" onClick={async () => {
           if (!kName.trim()) return say('이름을 입력해 주세요');
-          await run(() => addKid(fid, { name: kName.trim(), emoji: kEmoji, order: kids.length }), '아이를 추가했어요'); setKName('');
+          await run(() => addKid(fid, { name: kName.trim(), emoji: kEmoji, order: kids.length }), '어린이를 추가했어요'); setKName('');
         }}>추가하기</button>
-        <p className="muted">아이 기기에서 「아이 기기 연결」을 누르고 코드를 입력하면 그 아이의 읽기 상태만 바꿀 수 있어요.</p>
+        <p className="muted">어린이 기기에서 「어린이 기기 연결」을 누르고 코드를 입력하면 그 어린이의 읽기 상태만 바꿀 수 있어요.</p>
       </Section>
 
       <Section title="🎯 읽기 목표 (마감일)">
@@ -139,7 +139,7 @@ export default function Settings({ fid, family, pace, kids, books, activeKid, us
       </Section>
 
       <Section title="🔒 부모 모드 PIN">
-        <p className="muted">{priv.pinHash ? '현재 PIN이 설정되어 있어요.' : '아직 PIN이 없어요.'} 아이 모드에서 부모 모드로 돌아올 때 필요해요.</p>
+        <p className="muted">{priv.pinHash ? '현재 PIN이 설정되어 있어요.' : '아직 PIN이 없어요.'} 어린이 모드에서 부모 모드로 돌아올 때 필요해요.</p>
         <input className="input pin-input" type="password" inputMode="numeric" maxLength={4} value={pin} onChange={(e) => setPinV(e.target.value.replace(/\D/g, ''))} placeholder="••••" />
         <div className="row" style={{ marginTop: 8 }}>
           <button className="btn primary grow" onClick={async () => { if (pin.length !== 4) return say('숫자 4자리를 입력해 주세요'); await run(() => setPin(fid, pin), 'PIN을 저장했어요'); setPinV(''); }}>저장</button>
@@ -191,14 +191,19 @@ export default function Settings({ fid, family, pace, kids, books, activeKid, us
       </Section>
 
       <Section title="📦 기존 앱 데이터 가져오기">
-        <p className="muted">예전 「책은 내 친구」(Realtime Database)에 저장된 대출·읽기 기록을 현재 선택된 아이({kids.find((k) => k.id === activeKid)?.name || '-'})에게 불러와요. 리라초 템플릿 책과 id가 같은 항목만 가져옵니다.</p>
+        <p className="muted">예전 「책은 내 친구」(Realtime Database)에 저장된 대출·읽기 기록을 현재 선택된 어린이({kids.find((k) => k.id === activeKid)?.name || '-'})에게 불러와요. 리라초 템플릿 책과 id가 같은 항목만 가져옵니다.</p>
         <button className="btn block" onClick={async () => {
-          if (!confirm('기존 데이터를 선택된 아이에게 가져올까요? 같은 책의 현재 기록은 덮어써져요.')) return;
+          if (!confirm('기존 데이터를 선택된 어린이에게 가져올까요? 같은 책의 현재 기록은 덮어써져요.')) return;
           const n = await run(() => importLegacy(fid, activeKid, books));
           if (typeof n === 'number') setLegacyMsg(`${n}권의 기록을 확인해 가져왔어요.`);
         }}>기존 데이터 가져오기</button>
         {legacyMsg && <div className="ok">{legacyMsg}</div>}
       </Section>
+
+      <div className="glass card">
+        <p className="muted">로그인: {user.email}</p>
+        <button className="btn block" onClick={() => signOut(auth)}>로그아웃</button>
+      </div>
 
       <Section title="🗑 탈퇴 (계정·데이터 삭제)">
         <div className="danger-zone">
@@ -206,8 +211,8 @@ export default function Settings({ fid, family, pace, kids, books, activeKid, us
             <>
               <p><b>가족 데이터 전체가 삭제돼요.</b></p>
               <ul className="plain">
-                <li>아이 프로필, 읽기 기록, 도서 목록, 연결 코드, PIN이 모두 지워져요.</li>
-                <li>배우자 등 다른 보호자와 아이 폰은 더 이상 이 가족에 접근할 수 없어요.</li>
+                <li>어린이 프로필, 읽기 기록, 도서 목록, 연결 코드, PIN이 모두 지워져요.</li>
+                <li>배우자 등 다른 보호자와 어린이 폰은 더 이상 이 가족에 접근할 수 없어요.</li>
                 <li>학급에 참여 중이면 우리 집 집계 숫자와 나눔 글도 지워져요.</li>
                 <li>구글 로그인 계정 연결도 삭제돼요. 복구할 수 없어요.</li>
               </ul>
@@ -230,9 +235,9 @@ export default function Settings({ fid, family, pace, kids, books, activeKid, us
       </Section>
 
       <div className="glass card">
-        <p className="muted">로그인: {user.email}</p>
-        <button className="btn block" onClick={() => signOut(auth)}>로그아웃</button>
-        <a className="btn block" style={{ marginTop: 8, textDecoration: 'none', textAlign: 'center' }} href={contactHref}>✉️ 개발자에게 문의하기</a>
+        <h3 style={{ marginTop: 0 }}>✉️ 문의</h3>
+        <p className="muted">궁금한 점이나 불편한 점을 보내 주세요.</p>
+        <a className="btn block" style={{ textDecoration: 'none', textAlign: 'center' }} href={contactHref}>개발자에게 문의하기</a>
         <p className="muted" style={{ textAlign: 'center' }}>{CONTACT_EMAIL}</p>
       </div>
       <div className="pad-bottom" />

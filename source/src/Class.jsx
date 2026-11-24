@@ -33,11 +33,11 @@ function Start({ user, fid, family, say }) {
         <h2>🏫 우리 반 함께 읽기</h2>
         <p>같은 반 친구들과 <b>읽은 권수 평균</b>과 <b>인기 책</b>을 함께 보고, 다 읽은 책은 서로 나눌 수 있어요.</p>
         <ul className="plain">
-          <li>아이 이름은 공개되지 않아요. 숫자와 책 제목만 모아서 보여줘요.</li>
+          <li>어린이 이름은 공개되지 않아요. 숫자와 책 제목만 모아서 보여줘요.</li>
           <li>순위나 비교는 없어요. 참여 5명 이상부터 평균을 보여줘요.</li>
           <li>언제든 반에서 나가면 우리 집 정보가 모두 지워져요.</li>
         </ul>
-        <p className="muted">순서: 한 집이 반을 만들어 코드를 받고, 같은 반 학부모가 그 코드로 참여해요. 반에는 아이 폰이 아니라 부모 계정으로만 들어갈 수 있어요. 자세한 설명은 설정의 「사용 방법」에 있어요.</p>
+        <p className="muted">순서: 한 집이 반을 만들어 코드를 받고, 같은 반 학부모가 그 코드로 참여해요. 반에는 어린이 폰이 아니라 부모 계정으로만 들어갈 수 있어요. 자세한 설명은 설정의 「사용 방법」에 있어요.</p>
       </div>
       <div className="glass card">
         <h2>학급 코드로 참여</h2>
@@ -84,7 +84,7 @@ function Joined({ user, fid, family, kids, books, records, shares, classReady, s
       <div className="glass card">
         <div className="row">
           <div className="grow"><h2 style={{ marginBottom: 2 }}>🏫 {cls?.name || '우리 반'}</h2>
-            <div className="muted">참여 중인 아이 {stats.length}명</div></div>
+            <div className="muted">참여 중인 어린이 {stats.length}명</div></div>
         </div>
         <div className="chips" style={{ marginTop: 8 }}>
           {[['summary', '📊 반 현황'], ['board', '🤝 책 나눔'], ['more', '⚙️ 설정']].map(([k, l]) => (
@@ -107,9 +107,9 @@ function Joined({ user, fid, family, kids, books, records, shares, classReady, s
             <h2>내 기록 공유</h2>
             <label className="switch">
               <input type="checkbox" checked={family?.classShare !== false} onChange={(e) => setClassShare(fid, e.target.checked).then(() => say(e.target.checked ? '공유를 켰어요' : '공유를 껐어요. 우리 집 숫자가 반 집계에서 빠져요.')).catch((x) => say('실패: ' + (x.code || x.message)))} />
-              <span>우리 아이의 읽은 권수·책 목록을 반 집계에 포함</span>
+              <span>우리 어린이의 읽은 권수·책 목록을 반 집계에 포함</span>
             </label>
-            <p className="muted">공유해도 아이 이름·메모는 보이지 않아요.</p>
+            <p className="muted">공유해도 어린이 이름·메모는 보이지 않아요.</p>
           </div>
           <div className="glass card"><LeaveBtn user={user} fid={fid} cid={cid} kids={kids} say={say} /></div>
         </>
@@ -154,7 +154,7 @@ function Summary({ agg, books, records, family }) {
     return (
       <div className="glass card">
         <h2>반 평균 읽은 권수</h2>
-        <div className="empty">참여 아이가 {MIN_KIDS}명 이상 모이면 평균과 인기 책을 보여드려요.<br />
+        <div className="empty">참여 어린이가 {MIN_KIDS}명 이상 모이면 평균과 인기 책을 보여드려요.<br />
           <b>지금 {agg.kids}명</b> 참여 중이에요. 코드를 친구들에게 알려 주세요! 📣</div>
         <p className="muted">적은 인원에서는 누가 몇 권 읽었는지 짐작할 수 있어서 숨겨 둬요.</p>
       </div>
@@ -169,7 +169,7 @@ function Summary({ agg, books, records, family }) {
           <div className="glass box"><div className="n" style={{ color: 'var(--green)' }}>{agg.avgSel}</div><div className="l">평균 선정도서</div></div>
           <div className="glass box"><div className="n" style={{ color: 'var(--blue)' }}>{agg.reading}</div><div className="l">지금 읽는 중</div></div>
         </div>
-        <p className="muted">우리 아이는 {mine.done}권 (선정 {mine.selDone}권). 비교보다 함께 읽는 즐거움을 위한 숫자예요.</p>
+        <p className="muted">우리 어린이는 {mine.done}권 (선정 {mine.selDone}권). 비교보다 함께 읽는 즐거움을 위한 숫자예요.</p>
       </div>
       <div className="glass card">
         <h2>🔥 반에서 많이 읽은 책</h2>
@@ -215,7 +215,7 @@ function Board({ cid, fid, family, books, shares, say, chatUrl }) {
           <summary>❓ 책 나눔은 이렇게 해요</summary>
           <div className="help-body"><ShareSteps /></div>
         </details>
-        <p className="muted">신청과 답장은 앱 안의 짧은 메모로 주고받고, 책은 학교에서 아이 편으로 교환해요. 전화번호·주소는 적지 마세요. 판매·거래는 없고 나눔과 빌려주기만 해요.</p>
+        <p className="muted">신청과 답장은 앱 안의 짧은 메모로 주고받고, 책은 학교에서 어린이 편으로 교환해요.<br />책 나눔 글과 메모에는<br /><b>전화번호나 주소를 적지 마세요.</b><br />판매·거래는 없고 나눔과 빌려주기만 해요.</p>
       </div>
       {adding && <ShareForm cid={cid} fid={fid} family={family} books={books} say={say} onDone={() => setAdding(false)} />}
       {list.length === 0 && <div className="glass card empty">아직 글이 없어요.</div>}
@@ -336,7 +336,7 @@ function ShareItem({ cid, fid, family, share, say }) {
         <>
           {reqs.length > 0 && (
             <div className="reqs">
-              <div className="label-row">신청 {reqs.length}건 · 답장 메모를 남기고, 책은 학교에서 아이 편으로 전달해요</div>
+              <div className="label-row">신청 {reqs.length}건 · 답장 메모를 남기고, 책은 학교에서 어린이 편으로 전달해요</div>
               {reqs.map((r) => <ReqRow key={r.familyId} r={r} cid={cid} sid={share.id} say={say} />)}
             </div>
           )}
@@ -350,7 +350,7 @@ function ShareItem({ cid, fid, family, share, say }) {
       ) : ask ? (
         <div style={{ marginTop: 8 }}>
           <div className="muted" style={{ marginBottom: 6 }}>📌 책은 학교에서 만나서 주고 받아요. 언제 어디서 만날지 적어 주세요.</div>
-          <input className="input" maxLength={100} placeholder="예: 민준이 엄마예요, 내일 아침 교실 앞에서 받을게요" value={note} onChange={(e) => setNote(e.target.value)} />
+          <input className="input" maxLength={100} placeholder="예: 정빈이 엄마예요, 내일 아침 교실 앞에서 받을게요" value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="row" style={{ marginTop: 8 }}>
             <button className="btn primary grow" onClick={() => run(async () => { await requestShare(cid, share.id, fid, { nickname: family?.name || '', note }); setAsk(false); setNote(''); }, '신청했어요')}>보내기</button>
             <button className="btn" onClick={() => setAsk(false)}>취소</button>

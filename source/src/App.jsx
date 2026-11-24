@@ -46,8 +46,8 @@ function Landing({ anonymousUser }) {
       <div className="wrap">
         <div className="glass hero">
           <div className="logo">🔑</div>
-          <h1>아이 기기 연결</h1>
-          <p className="muted">부모님 앱의 설정 → 아이 관리에 있는 연결 코드 6자리를 입력하세요.</p>
+          <h1>어린이 기기 연결</h1>
+          <p className="muted">부모님 앱의 설정 → 어린이 관리에 있는 연결 코드 6자리를 입력하세요.</p>
           <input className="input code-input" value={code} maxLength={6} autoCapitalize="characters"
             onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="ABC123" />
           {err && <div className="err">{err}</div>}
@@ -65,7 +65,7 @@ function Landing({ anonymousUser }) {
         <p className="muted">필독서 읽기를 가족이 함께 관리해요</p>
         {err && <div className="err">{err}</div>}
         <button className="btn primary block" style={{ marginTop: 14 }} onClick={() => googleLogin(setErr)}>👨‍👩‍👧 부모님 · Google로 시작</button>
-        <button className="btn block" style={{ marginTop: 10 }} onClick={() => setMode('kid')}>🧒 아이 기기 연결 (코드 입력)</button>
+        <button className="btn block" style={{ marginTop: 10 }} onClick={() => setMode('kid')}>🧒 어린이 기기 연결 (코드 입력)</button>
         {anonymousUser && <p className="muted" style={{ marginTop: 14 }}>연결이 해제된 기기예요. 코드를 다시 입력해 주세요.</p>}
         <p className="contact">문의: <a href={contactHref}>{CONTACT_EMAIL}</a></p>
       </div>
@@ -82,7 +82,7 @@ function Onboarding({ user }) {
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
 
   async function create() {
-    if (!f.familyName.trim() || !f.kidName.trim()) { setErr('가족 이름과 아이 이름을 입력해 주세요.'); return; }
+    if (!f.familyName.trim() || !f.kidName.trim()) { setErr('가족 이름과 어린이 이름을 입력해 주세요.'); return; }
     if (f.pin && !/^\d{4}$/.test(f.pin)) { setErr('PIN은 숫자 4자리여야 해요.'); return; }
     setBusy(true); setErr('');
     try { await createFamily(user, { ...f, familyName: f.familyName.trim(), kidName: f.kidName.trim() }); }
@@ -112,9 +112,9 @@ function Onboarding({ user }) {
               <div className="grow"><label className="f">학교</label><input className="input" value={f.school} onChange={(e) => set('school', e.target.value)} /></div>
               <div className="grow"><label className="f">학년/학급</label><input className="input" value={f.className} onChange={(e) => set('className', e.target.value)} /></div>
             </div>
-            <label className="f">아이 이름(별명)</label>
-            <input className="input" value={f.kidName} onChange={(e) => set('kidName', e.target.value)} placeholder="예: 민준" />
-            <label className="f">아이 캐릭터</label>
+            <label className="f">어린이 이름(별명)</label>
+            <input className="input" value={f.kidName} onChange={(e) => set('kidName', e.target.value)} placeholder="예: 정빈" />
+            <label className="f">어린이 캐릭터</label>
             <div className="chips">{KID_EMOJIS.map((e) => (
               <button key={e} className={'chip' + (f.kidEmoji === e ? ' on' : '')} onClick={() => set('kidEmoji', e)}>{e}</button>
             ))}</div>
