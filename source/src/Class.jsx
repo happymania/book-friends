@@ -55,6 +55,7 @@ function Start({ user, fid, family, say }) {
           <input className="input" placeholder="https://open.kakao.com/..." value={chat} onChange={(e) => setChat(e.target.value)} />
           <p className="muted">나눔 연락은 이 단톡방에서 해요. 나중에 설정에서 바꿀 수 있어요.</p>
         </>)}
+        {!CHAT_ENABLED && <p className="muted">💬 학급 단톡방은 정책상 사용하지 않습니다.</p>}
         <button className="btn block" style={{ marginTop: 8 }} disabled={busy || !name.trim()}
           onClick={() => run(() => createClass(user, fid, { name: name.trim(), school: family?.school, className: family?.className, chatUrl: CHAT_ENABLED ? cleanChatUrl(chat) : '' }), '반을 만들었어요')}>반 만들고 코드 받기</button>
         <p className="muted">만든 뒤 나오는 코드를 같은 반 학부모에게 알려 주세요.</p>
@@ -106,6 +107,12 @@ function Joined({ user, fid, family, kids, books, records, shares, classReady, s
             <p className="muted">같은 반 학부모에게 알려 주세요. 이 코드를 아는 보호자만 참여할 수 있어요.</p>
           </div>
           {CHAT_ENABLED && <ChatLink cls={cls} cid={cid} isOwner={cls?.ownerUid === user.uid} say={say} />}
+          {!CHAT_ENABLED && (
+            <div className="glass card">
+              <h2>💬 학급 단톡방</h2>
+              <p className="muted">정책상 사용하지 않습니다.</p>
+            </div>
+          )}
           <div className="glass card">
             <h2>내 기록 공유</h2>
             <label className="switch">
