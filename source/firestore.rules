@@ -202,10 +202,12 @@ service cloud.firestore {
         match /records/{bookId} {
           allow read: if isMember(fid) || isDeviceOf(fid, kidId);
           allow write: if isMember(fid);
-          // 아이 기기는 '읽기 상태' 필드만 기록 가능
+          // 아이 기기는 '읽기 상태'와 별점·한줄평 필드만 기록 가능
           allow create, update: if isDeviceOf(fid, kidId)
-            && request.resource.data.keys().hasOnly(['read', 'done_date', 'updatedAt'])
-            && request.resource.data.read in ['none', 'reading', 'done'];
+            && request.resource.data.keys().hasOnly(['read', 'done_date', 'updatedAt', 'rating', 'review'])
+            && request.resource.data.read in ['none', 'reading', 'done']
+            && (!('rating' in request.resource.data) || (request.resource.data.rating is int && request.resource.data.rating >= 0 && request.resource.data.rating <= 5))
+            && (!('review' in request.resource.data) || (request.resource.data.review is string && request.resource.data.review.size() <= 100));
         }
       }
     }

@@ -146,7 +146,9 @@ export default function BookList({ books, records, isParent, onLib, onRead, onRe
                   <button className={'pb ri' + (r === 'reading' ? ' on' : '')} onClick={() => onRead(b, 'reading')}>📖 읽는중</button>
                   <button className={'pb rd' + (r === 'done' ? ' on' : '')} onClick={() => onRead(b, 'done')}>🏆 완독!</button>
                 </div>
-                {r === 'done' && <ReviewBox rec={records[b.id]} onSave={(p) => onReview(b, p)} />}
+                {r === 'done' && (records[b.id]?.rating > 0 || records[b.id]?.review) && (
+                  <div className="reviewshow">{records[b.id].rating > 0 && <Stars value={records[b.id].rating} />}{records[b.id].review && <div>“{records[b.id].review}”</div>}</div>
+                )}
               </>
             ) : (
               <>
@@ -159,9 +161,7 @@ export default function BookList({ books, records, isParent, onLib, onRead, onRe
                   ))}
                 </div>
                 {r === 'done' && records[b.id]?.done_date && <div className="muted" style={{ marginTop: 6 }}>🗓 {records[b.id].done_date}에 완독</div>}
-                {r === 'done' && (records[b.id]?.rating > 0 || records[b.id]?.review) && (
-                  <div className="reviewshow">{records[b.id].rating > 0 && <Stars value={records[b.id].rating} />}{records[b.id].review && <div>“{records[b.id].review}”</div>}</div>
-                )}
+                {r === 'done' && <ReviewBox rec={records[b.id]} onSave={(p) => onReview(b, p)} />}
               </>
             )}
           </div>

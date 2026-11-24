@@ -83,7 +83,7 @@ export function setLib(fid, bookId, lib) {
   return updateDoc(fdoc(fid, 'books', bookId), { lib });
 }
 
-// 완독한 책의 별점(1~5)과 한줄평(100자). 가족만 볼 수 있고 학급에는 올라가지 않아요.
+// 완독한 책의 별점(1~5)과 한줄평(100자). 입력은 어린이 모드에서만. 가족만 볼 수 있고 학급에는 올라가지 않아요.
 export function setReview(fid, kidId, bookId, { rating, review }) {
   const data = { updatedAt: serverTimestamp() };
   if (rating !== undefined) data.rating = Math.max(0, Math.min(5, Number(rating) || 0));
