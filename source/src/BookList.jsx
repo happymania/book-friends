@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { LIB, READ } from './util';
-import { goalOptions } from './logic';
+import { goalOptions, targetBooks } from './logic';
 
 function hl(text, q) {
   if (!q) return text;
@@ -51,14 +51,14 @@ const PACE_MSG = {
   none: ['📚', '목표로 삼을 책이 없어요.'],
 };
 
-export function GoalForm({ family, books, onGoal, onClose }) {
+export function GoalForm({ family, books, records = {}, onGoal, onClose }) {
   const [deadline, setDeadline] = useState(family?.deadline || '');
   const [target, setTarget] = useState(family?.goalTarget || 'all');
   const [ids, setIds] = useState(family?.goalBookIds || []);
   const custom = target === 'custom';
   const byId = Object.fromEntries(books.map((b) => [b.id, b]));
   const chosen = ids.filter((id) => byId[id]);
-  const rest = books.filter((b) => !chosen.includes(b.id));
+  const rest = books.filter((b) => !chosen.includes(b.id) && records[b.id]?.read !== 'done'); // 완독한 책은 목록에서 제외
   return (
     <div className="goalform">
       <label className="f">목표 범위</label>
@@ -94,14 +94,14 @@ export function GoalForm({ family, books, onGoal, onClose }) {
   );
 }
 
-function PaceCard({ pace, family, books, onGoal }) {
+function PaceCard({ pace, family, books, records, onGoal }) {
   const [edit, setEdit] = useState(false);
   if (!pace.hasGoal) {
     return (
       <div className="glass card pace">
         <div className="row"><div className="grow"><b>🎯 읽기 목표</b><div className="muted">마감일을 정하면 일주일에 몇 권씩 읽어야 하는지 알려 드려요.</div></div>
           {!edit && <button className="btn sm" onClick={() => setEdit(true)}>정하기</button>}</div>
-        {edit && <GoalForm family={family} books={books} onGoal={onGoal} onClose={() => setEdit(false)} />}
+        {edit && <GoalForm family={family} books={books} records={records} onGoal={onGoal} onClose={() => setEdit(false)} />}
       </div>
     );
   }
@@ -116,7 +116,7 @@ function PaceCard({ pace, family, books, onGoal }) {
         <div className="muted">마감까지 {pace.days}일 · 남은 책 {pace.remaining}권 → <b>일주일에 {pace.perWeek}권</b> (이번 주 {pace.thisWeek}권 완독)</div>
       )}
       {!edit && <button className="btn sm" style={{ marginTop: 8 }} onClick={() => setEdit(true)}>목표 고치기</button>}
-      {edit && <GoalForm family={family} books={books} onGoal={onGoal} onClose={() => setEdit(false)} />}
+      {edit && <GoalForm family={family} books={books} records={records} onGoal={onGoal} onClose={() => setEdit(false)} />}
     </div>
   );
 }
@@ -127,6 +127,8 @@ export default function BookList({ books, records, isParent, onLib, onRead, onRe
   const [q, setQ] = useState('');
 
   const rd = (b) => records[b.id]?.read || 'none';
+  const goalIds = useMemo(() => (pace?.hasGoal && pace.days >= 0 ? new Set(targetBooks(books, family?.goalTarget, family?.goalBookIds || []).map((b) => b.id)) : new Set()), [pace, books, family]);
+  const goalTag = pace?.hasGoal && pace.days >= 0 ? `🎯 목표 · 마감 ${Number(family.deadline.slice(5, 7))}/${Number(family.deadline.slice(8, 10))} (${pace.days === 0 ? 'D-DAY' : 'D-' + pace.days})` : '';
   const sum = useMemo(() => {
     let reading = 0, done = 0;
     books.forEach((b) => { const r = records[b.id]?.read; if (r === 'reading') reading++; else if (r === 'done') done++; });
@@ -145,7 +147,7 @@ export default function BookList({ books, records, isParent, onLib, onRead, onRe
 
   return (
     <>
-      {pace && <PaceCard pace={pace} family={family} books={books} onGoal={onGoal} />}
+      {pace && <PaceCard pace={pace} family={family} books={books} records={records} onGoal={onGoal} />}
       <div className="sum">
         <div className="glass box"><div className="n">{sum.total - sum.reading - sum.done}</div><div className="l">안 읽음</div></div>
         <div className="glass box"><div className="n" style={{ color: 'var(--blue)' }}>{sum.reading}</div><div className="l">읽는 중</div></div>
@@ -177,6 +179,7 @@ export default function BookList({ books, records, isParent, onLib, onRead, onRe
               <span className="badge cat">{b.cat}</span>
             </div>
             <div className="t">{hl(b.title, q.trim())}</div>
+            {goalTag && goalIds.has(b.id) && r !== 'done' && <div className="goaltag">{goalTag}</div>}
             {isParent ? (
               <>
                 {shareHints[b.id] > 0 && r !== 'done' && (

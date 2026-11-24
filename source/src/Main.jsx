@@ -244,7 +244,7 @@ export default function Main({ user, profile, kidMode }) {
       ) : tab === 'class' ? (
         <ClassTab user={user} fid={fid} family={family} kids={kids} books={books} records={records} shares={shares} classReady={classReady} say={say} />
       ) : (
-        <Settings focus={focus} fid={fid} family={family} pace={pace} kids={kids} books={books} activeKid={activeKid} user={user} say={say} />
+        <Settings records={records} focus={focus} fid={fid} family={family} pace={pace} kids={kids} books={books} activeKid={activeKid} user={user} say={say} />
       )}
 
       {kidMode && (

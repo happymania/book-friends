@@ -25,7 +25,7 @@ function Section({ id, title, children, open: o = false }) {
   );
 }
 
-export default function Settings({ focus, fid, family, pace, kids, books, activeKid, user, say }) {
+export default function Settings({ records, focus, fid, family, pace, kids, books, activeKid, user, say }) {
   const [priv, setPriv] = useState({});
   useEffect(() => onSnapshot(doc(db, 'families', fid, 'private', 'settings'), (s) => setPriv(s.data() || {}), () => {}), [fid]);
   const run = async (fn, okMsg) => {
@@ -123,7 +123,7 @@ export default function Settings({ focus, fid, family, pace, kids, books, active
 
       <Section id="goal" title="🎯 읽기 목표 (마감일)" open={focus === 'goal'}>
         <p className="muted">마감일과 목표 범위를 정하면 책 탭에 「일주일에 몇 권」이 표시돼요. 가족 모두에게 같은 목표가 적용돼요.</p>
-        <GoalForm family={family} books={books} onGoal={(g) => run(() => setGoal(fid, g), '목표를 저장했어요')} />
+        <GoalForm family={family} books={books} records={records} onGoal={(g) => run(() => setGoal(fid, g), '목표를 저장했어요')} />
         {pace?.hasGoal && pace.level !== 'over' && pace.level !== 'complete' && <div className="ok">지금 기준: 남은 {pace.remaining}권 → 일주일에 {pace.perWeek}권</div>}
       </Section>
 
