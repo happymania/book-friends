@@ -192,6 +192,12 @@ export default function Main({ user, profile, kidMode }) {
             <div className="muted">{family?.school} {family?.className}</div>
           </div>
           <span className="modebadge">{kidMode ? '어린이 기기' : isParent ? '부모 모드' : '어린이 모드'}</span>
+          <button className="refreshbtn" aria-label="새로고침" title="새로고침"
+            onClick={() => { const u = new URL(location.href); u.searchParams.set('r', Date.now()); location.replace(u.href); }}>
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M20 11a8 8 0 1 0-2.3 5.7" /><path d="M20 4v7h-7" />
+            </svg>
+          </button>
         </div>
         <div className="fsrow">
           <span className="muted">글자 크기</span>

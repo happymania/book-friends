@@ -226,3 +226,6 @@ body { word-break: keep-all; overflow-wrap: anywhere; }
 .contactbtn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 64px; padding: 10px 16px; text-decoration: none; text-align: center; }
 .contactbtn .cl { font-weight: 700; font-size: 1.05rem; }
 .contactbtn .ce { font-size: .9rem; color: var(--orange-d); letter-spacing: .02em; word-break: break-all; }
+
+.refreshbtn { flex: none; width: 44px; height: 44px; margin-left: 8px; border-radius: 14px; border: 1px solid var(--line); background: var(--glass-solid); color: var(--orange-d); display: inline-flex; align-items: center; justify-content: center; }
+.refreshbtn:active svg { transform: rotate(180deg); transition: transform .3s; }
