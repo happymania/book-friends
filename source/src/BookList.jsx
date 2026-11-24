@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { LIB, READ } from './util';
 
 function hl(text, q) {
@@ -6,6 +6,33 @@ function hl(text, q) {
   const i = text.toLowerCase().indexOf(q.toLowerCase());
   if (i < 0) return text;
   return <>{text.slice(0, i)}<mark>{text.slice(i, i + q.length)}</mark>{text.slice(i + q.length)}</>;
+}
+
+export function Stars({ value = 0, onPick }) {
+  return (
+    <span className="stars" role={onPick ? 'group' : 'img'} aria-label={`별점 ${value}점`}>
+      {[1, 2, 3, 4, 5].map((n) => onPick
+        ? <button key={n} type="button" className={'star' + (n <= value ? ' on' : '')} aria-label={`${n}점`} onClick={() => onPick(n === value ? 0 : n)}>★</button>
+        : <i key={n} className={'star ro' + (n <= value ? ' on' : '')}>★</i>)}
+    </span>
+  );
+}
+
+// 완독한 책의 별점과 한줄평 (입력은 부모 모드에서만)
+function ReviewBox({ rec, onSave }) {
+  const [text, setText] = useState(rec?.review || '');
+  useEffect(() => { setText(rec?.review || ''); }, [rec?.review]);
+  const dirty = text.trim() !== (rec?.review || '');
+  return (
+    <div className="reviewbox">
+      <div className="label-row">별점과 한줄평</div>
+      <Stars value={rec?.rating || 0} onPick={(n) => onSave({ rating: n })} />
+      <div className="row" style={{ marginTop: 6 }}>
+        <input className="input grow" maxLength={60} placeholder="읽고 어땠는지 한 줄로 남겨 보세요" value={text} onChange={(e) => setText(e.target.value)} />
+        <button className="btn sm primary" disabled={!dirty} onClick={() => onSave({ review: text })}>저장</button>
+      </div>
+    </div>
+  );
 }
 
 const PACE_MSG = {
@@ -41,7 +68,7 @@ function PaceCard({ pace, goToSettings }) {
   );
 }
 
-export default function BookList({ books, records, isParent, onLib, onRead, pace, shareHints = {}, goToSettings, goToClass }) {
+export default function BookList({ books, records, isParent, onLib, onRead, onReview, pace, shareHints = {}, goToSettings, goToClass }) {
   const [type, setType] = useState('전체');
   const [status, setStatus] = useState('전체');
   const [q, setQ] = useState('');
@@ -113,6 +140,7 @@ export default function BookList({ books, records, isParent, onLib, onRead, pace
                   <button className={'pb ri' + (r === 'reading' ? ' on' : '')} onClick={() => onRead(b, 'reading')}>📖 읽는중</button>
                   <button className={'pb rd' + (r === 'done' ? ' on' : '')} onClick={() => onRead(b, 'done')}>🏆 완독!</button>
                 </div>
+                {r === 'done' && <ReviewBox rec={records[b.id]} onSave={(p) => onReview(b, p)} />}
               </>
             ) : (
               <>
@@ -125,6 +153,9 @@ export default function BookList({ books, records, isParent, onLib, onRead, pace
                   ))}
                 </div>
                 {r === 'done' && records[b.id]?.done_date && <div className="muted" style={{ marginTop: 6 }}>🗓 {records[b.id].done_date}에 완독</div>}
+                {r === 'done' && (records[b.id]?.rating > 0 || records[b.id]?.review) && (
+                  <div className="reviewshow">{records[b.id].rating > 0 && <Stars value={records[b.id].rating} />}{records[b.id].review && <div>“{records[b.id].review}”</div>}</div>
+                )}
               </>
             )}
           </div>

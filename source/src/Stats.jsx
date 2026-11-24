@@ -1,6 +1,7 @@
 import React from 'react';
 import { LIB, READ, downloadCsv, today } from './util';
 import { computeBadges } from './logic';
+import { Stars } from './BookList';
 
 function Prog({ label, d, t, color }) {
   const pct = t ? Math.round((d / t) * 100) : 0;
@@ -21,15 +22,15 @@ export default function Stats({ books, records, kid, isParent, family }) {
   const libCount = { borrowed: 0, returned: 0, purchased: 0, none: 0 };
   books.forEach((b) => { libCount[b.lib || 'none']++; });
   const dones = books.filter((b) => rd(b) === 'done')
-    .map((b) => ({ ...b, date: records[b.id]?.done_date || '' }))
+    .map((b) => ({ ...b, date: records[b.id]?.done_date || '', rating: records[b.id]?.rating || 0, review: records[b.id]?.review || '' }))
     .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
   const bd = computeBadges(books, records, today());
   const earnedN = bd.badges.filter((x) => x.earned).length;
 
   function exportCsv() {
-    const rows = [['구분', '분류', '제목', '도서확보', '읽기상태', '완독일']];
-    books.forEach((b) => rows.push([b.type, b.cat, b.title, LIB[b.lib || 'none'].label, READ[rd(b)].label.replace('!', ''), records[b.id]?.done_date || '']));
+    const rows = [['구분', '분류', '제목', '도서확보', '읽기상태', '완독일', '별점', '한줄평']];
+    books.forEach((b) => rows.push([b.type, b.cat, b.title, LIB[b.lib || 'none'].label, READ[rd(b)].label.replace('!', ''), records[b.id]?.done_date || '', records[b.id]?.rating || '', records[b.id]?.review || '']));
     downloadCsv(`독서기록_${kid?.name || ''}_${today()}.csv`, rows);
   }
 
@@ -72,7 +73,12 @@ export default function Stats({ books, records, kid, isParent, family }) {
         <h2>완독 기록</h2>
         {dones.length === 0 ? <div className="empty">아직 완독한 책이 없어요. 첫 완독을 응원해요! 💪</div> : (
           <div className="donelist">
-            {dones.map((b) => <div className="it" key={b.id}><span>🏆 {b.title}</span><span className="d">{b.date || '날짜 미기록'}</span></div>)}
+            {dones.map((b) => (
+              <div className="it itrev" key={b.id}>
+                <div className="itrow"><span>🏆 {b.title}</span><span className="d">{b.date || '날짜 미기록'}</span></div>
+                {(b.rating > 0 || b.review) && <div className="reviewshow">{b.rating > 0 && <Stars value={b.rating} />}{b.review && <div>“{b.review}”</div>}</div>}
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -228,3 +228,12 @@ body { word-break: keep-all; overflow-wrap: anywhere; }
 .contact-row .ce { font-size: .95rem; color: var(--orange-d); word-break: break-all; }
 .refreshbtn { flex: none; width: 44px; height: 44px; margin-left: 8px; border-radius: 14px; border: 1px solid var(--line); background: var(--glass-solid); color: var(--orange-d); display: inline-flex; align-items: center; justify-content: center; }
 .refreshbtn:active svg { transform: rotate(180deg); transition: transform .3s; }
+
+.stars { display: inline-flex; gap: 2px; }
+.stars .star { font-size: 1.7rem; line-height: 1; color: #d9d2bd; background: none; border: 0; min-width: 44px; min-height: 44px; padding: 0; }
+.stars .star.on { color: var(--gold-d); }
+.stars .star.ro { font-style: normal; font-size: 1.15rem; min-width: 0; min-height: 0; }
+.reviewbox { margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(0,0,0,.12); }
+.reviewshow { margin-top: 6px; line-height: 1.5; color: var(--orange-d); }
+.donelist .itrev { display: block; }
+.donelist .itrev .itrow { display: flex; justify-content: space-between; gap: 8px; }
