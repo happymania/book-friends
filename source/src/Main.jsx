@@ -9,6 +9,7 @@ import BookList from './BookList.jsx';
 import Stats from './Stats.jsx';
 import Settings from './Settings.jsx';
 import ClassTab from './Class.jsx';
+import NoticeBar from './Notices.jsx';
 
 const ls = {
   get: (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
@@ -224,7 +225,10 @@ export default function Main({ user, profile, kidMode }) {
       {!kid && !kidMode ? (
         <div className="glass card empty">아이 프로필이 없어요. 설정 탭에서 추가해 주세요.</div>
       ) : tab === 'books' ? (
+        <>
+        {isParent && <NoticeBar />}
         <BookList books={books} records={records} isParent={isParent} onLib={onLib} onRead={onRead} pace={pace} shareHints={shareHints} goToSettings={isParent ? () => setTab('settings') : null} goToClass={isParent ? () => setTab('class') : null} />
+        </>
       ) : tab === 'stats' ? (
         <Stats books={books} records={records} kid={kid} isParent={isParent} family={family} />
       ) : tab === 'class' ? (

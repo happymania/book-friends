@@ -208,3 +208,11 @@ body { word-break: keep-all; overflow-wrap: anywhere; }
 .fsopt { min-width: 52px; min-height: 44px; border: 0; background: transparent; padding: 0 8px; font-weight: 700; color: #231f14; line-height: 1; }
 .fsopt + .fsopt { border-left: 1px solid rgba(35,31,20,.12); }
 .fsopt.on { background: var(--orange); }
+
+.noticebar { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; margin-bottom: 12px; padding: 8px 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--glass-solid); font-size: 1rem; text-align: left; }
+.noticebar.new { background: var(--orange-l); border-color: var(--gold-d); font-weight: 700; }
+.dot { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: #d64545; color: #fff; font-size: .75rem; }
+.modal.wide { max-width: 520px; max-height: 82vh; overflow-y: auto; text-align: left; }
+.notice { padding: 10px 0; border-bottom: 1px dashed rgba(0,0,0,.12); }
+.notice .nt { font-weight: 700; font-size: 1.1rem; }
+.notice p { margin: 6px 0; line-height: 1.6; }
