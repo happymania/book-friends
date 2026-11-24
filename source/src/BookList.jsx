@@ -29,8 +29,12 @@ function ReviewBox({ rec, onSave }) {
       <Stars value={rec?.rating || 0} onPick={(n) => onSave({ rating: n })} />
       <div className="row" style={{ marginTop: 6 }}>
         <input className="input grow" maxLength={100} placeholder="읽고 어땠는지 한 줄로 남겨 보세요" value={text} onChange={(e) => setText(e.target.value)} />
-        <button className="btn sm primary" disabled={!dirty} onClick={() => onSave({ review: text })}>저장</button>
+        <button className="btn sm primary" disabled={!dirty} onClick={() => onSave({ review: text })}>{rec?.review ? '수정' : '저장'}</button>
       </div>
+      {(rec?.review || rec?.rating > 0) && (
+        <button className="btn sm danger" style={{ marginTop: 6 }}
+          onClick={() => confirm('별점과 한줄평을 모두 지울까요?') && onSave({ rating: 0, review: '' })}>🗑 별점·한줄평 삭제</button>
+      )}
     </div>
   );
 }
