@@ -190,8 +190,8 @@ export default function Main({ user, profile, kidMode }) {
       <div className="glass top">
         <div className="row">
           <div className="grow">
-            <div className="title">{!isParent && kid ? `${kid.emoji} ${kid.name}` : `📚 ${family?.name || '책은 내 친구'}`}</div>
-            <div className="muted">{family?.school} {family?.className}</div>
+            <div className="title">{!isParent && kid ? `${kid.emoji} ${kid.name}` : `👪 ${family?.name ? family.name + ' 부모님' : '책은 내 친구'}`}</div>
+            <div className="muted">{family?.school} {family?.className}{isParent && (family?.school || family?.className) ? ' 학부모' : ''}</div>
           </div>
           <span className="modebadge">{kidMode ? '어린이 기기' : isParent ? '부모 모드' : '어린이 모드'}</span>
           <button className="refreshbtn" aria-label="새로고침" title="새로고침"
