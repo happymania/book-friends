@@ -4,7 +4,7 @@ import { collection, doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { hasPin, verifyPin, setLib, setRead, disconnectKidDevice, ensureClassMember, syncStats, deleteStats, resetMyProfile } from './db';
 import { computePace, computeBadges, earnedIds, statPayload, titleKey } from './logic';
-import { today, nextFontSize, getFontSize, FS_LABEL } from './util';
+import { today, applyFontSize, getFontSize, FS_LABEL } from './util';
 import BookList from './BookList.jsx';
 import Stats from './Stats.jsx';
 import Settings from './Settings.jsx';
@@ -189,8 +189,16 @@ export default function Main({ user, profile, kidMode }) {
             <div className="title">📚 {family?.name || '책은 내 친구'}</div>
             <div className="muted">{family?.school} {family?.className}</div>
           </div>
-          <button className="fsbtn" onClick={() => setFs(nextFontSize())} aria-label="글자 크기 바꾸기">가 {FS_LABEL[fs]}</button>
           <span className="modebadge">{kidMode ? '아이 기기' : isParent ? '부모 모드' : '아이 모드'}</span>
+        </div>
+        <div className="fsrow">
+          <span className="muted">글자 크기</span>
+          <div className="fsgroup" role="group" aria-label="글자 크기">
+            {['normal', 'lg', 'xl'].map((k, i) => (
+              <button key={k} className={'fsopt' + (fs === k ? ' on' : '')} style={{ fontSize: [14, 18, 24][i] }}
+                aria-label={FS_LABEL[k]} aria-pressed={fs === k} onClick={() => { applyFontSize(k); setFs(k); }}>가</button>
+            ))}
+          </div>
         </div>
         {!kidMode && (
           <div className="row" style={{ marginTop: 8 }}>
