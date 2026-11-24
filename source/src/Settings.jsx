@@ -238,11 +238,12 @@ export default function Settings({ focus, fid, family, pace, kids, books, active
         <p className="muted">버튼이 어려우면 {CONTACT_EMAIL} 로 삭제를 요청해도 돼요.</p>
       </Section>
 
-      <div className="glass card">
-        <h3 style={{ marginTop: 0 }}>✉️ 문의</h3>
-        <p className="muted">궁금한 점이나 불편한 점을 보내 주세요.</p>
-        <a className="btn block" style={{ textDecoration: 'none', textAlign: 'center' }} href={contactHref}>개발자에게 문의하기</a>
-        <p className="muted" style={{ textAlign: 'center' }}>{CONTACT_EMAIL}</p>
+      <div className="glass card contact-card">
+        <div className="muted">궁금한 점이나 불편한 점을 보내 주세요.</div>
+        <a className="btn block contactbtn" href={contactHref}>
+          <span className="cl">✉️ 개발자에게 문의하기</span>
+          <span className="ce">{CONTACT_EMAIL}</span>
+        </a>
       </div>
       <div className="pad-bottom" />
     </>
