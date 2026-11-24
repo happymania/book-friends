@@ -50,14 +50,15 @@ const PACE_MSG = {
   none: ['📚', '목표로 삼을 책이 없어요.'],
 };
 
-function GoalForm({ family, onGoal, onClose }) {
+function GoalForm({ family, books, onGoal, onClose }) {
+  const selN = books.filter((b) => b.type === '선정').length;
   const [deadline, setDeadline] = useState(family?.deadline || '');
   const [target, setTarget] = useState(family?.goalTarget || 'all');
   return (
     <div className="goalform">
       <label className="f">목표 범위</label>
       <select className="input" value={target} onChange={(e) => setTarget(e.target.value)}>
-        <option value="all">전체 도서</option><option value="selected">선정도서만</option>
+        <option value="all">{`전체 도서 (${books.length}권)`}</option><option value="selected">{`선정도서만 (${selN}권)`}</option>
       </select>
       <label className="f">마감일</label>
       <input className="input" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
@@ -70,14 +71,14 @@ function GoalForm({ family, onGoal, onClose }) {
   );
 }
 
-function PaceCard({ pace, family, onGoal }) {
+function PaceCard({ pace, family, books, onGoal }) {
   const [edit, setEdit] = useState(false);
   if (!pace.hasGoal) {
     return (
       <div className="glass card pace">
         <div className="row"><div className="grow"><b>🎯 읽기 목표</b><div className="muted">마감일을 정하면 일주일에 몇 권씩 읽어야 하는지 알려 드려요.</div></div>
           {!edit && <button className="btn sm" onClick={() => setEdit(true)}>정하기</button>}</div>
-        {edit && <GoalForm family={family} onGoal={onGoal} onClose={() => setEdit(false)} />}
+        {edit && <GoalForm family={family} books={books} onGoal={onGoal} onClose={() => setEdit(false)} />}
       </div>
     );
   }
@@ -92,7 +93,7 @@ function PaceCard({ pace, family, onGoal }) {
         <div className="muted">마감까지 {pace.days}일 · 남은 책 {pace.remaining}권 → <b>일주일에 {pace.perWeek}권</b> (이번 주 {pace.thisWeek}권 완독)</div>
       )}
       {!edit && <button className="btn sm" style={{ marginTop: 8 }} onClick={() => setEdit(true)}>목표 고치기</button>}
-      {edit && <GoalForm family={family} onGoal={onGoal} onClose={() => setEdit(false)} />}
+      {edit && <GoalForm family={family} books={books} onGoal={onGoal} onClose={() => setEdit(false)} />}
     </div>
   );
 }
@@ -121,7 +122,7 @@ export default function BookList({ books, records, isParent, onLib, onRead, onRe
 
   return (
     <>
-      {pace && <PaceCard pace={pace} family={family} onGoal={onGoal} />}
+      {pace && <PaceCard pace={pace} family={family} books={books} onGoal={onGoal} />}
       <div className="sum">
         <div className="glass box"><div className="n">{sum.total - sum.reading - sum.done}</div><div className="l">안 읽음</div></div>
         <div className="glass box"><div className="n" style={{ color: 'var(--blue)' }}>{sum.reading}</div><div className="l">읽는 중</div></div>
