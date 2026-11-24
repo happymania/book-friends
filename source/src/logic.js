@@ -33,7 +33,7 @@ export function targetLabel(gt) {
   return '전체 도서';
 }
 export function goalOptions(books) {
-  const opts = [{ value: 'all', label: `전체 도서 (${books.length}권)` }, { value: 'custom', label: '직접 고르기 (책을 하나씩 추가)' }];
+  const opts = [{ value: 'all', label: `전체 도서 (${books.length}권)` }, { value: 'custom', label: '안 읽은 책 직접 고르기 (책을 하나씩 추가)' }];
   const sel = targetBooks(books, 'selected').length, rec = targetBooks(books, 'recommended').length;
   if (sel) opts.push({ value: 'selected', label: `선정도서 전체 (${sel}권)` });
   if (rec) opts.push({ value: 'recommended', label: `권장도서 전체 (${rec}권)` });
